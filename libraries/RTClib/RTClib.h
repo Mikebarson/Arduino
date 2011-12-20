@@ -28,10 +28,20 @@ protected:
 // RTC based on the DS1307 chip connected via I2C and the Wire library
 class RTC_DS1307 {
 public:
-  static uint8_t begin(void);
-    static void adjust(const DateTime& dt);
-    uint8_t isrunning(void);
-    static DateTime now();
+	static uint8_t begin(void);
+	static void adjust(const DateTime& dt);
+	uint8_t isrunning(void);
+	static DateTime now();
+
+	enum SquareWaveFrequency
+	{
+		OneHz = 0,
+		FourKHz = 1,
+		EightKHz = 2,
+		ThirtyTwoKHz = 3,
+	};
+
+	static void controlSquareWaveOutput(bool enable, SquareWaveFrequency freq, bool disabledOutputLevel);
 };
 
 // RTC using the internal millis() clock, has to be initialized before use

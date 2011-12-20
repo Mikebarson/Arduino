@@ -47,12 +47,18 @@ volatile bool turnLightsOn = true;
 int contrast = defaultContrast;
 int currentState = States::idle;
 
+volatile int squareCount;
+
+
 void setup()
 {
+  Wire.begin();
+  
   lcdBacklight.SetColor(255, 0, 0);
   
   configureLCD();
   configureInterrupts();
+  configureRTC();
   
   timer.SetTimespan(5);
 
@@ -75,6 +81,7 @@ void loop()
   glcd.drawString(0, 10, toString(encoderButtonPressCount));
   glcd.drawString(0, 20, toString(alarmButtonPressCount));
   glcd.drawString(0, 30, toString(timeDeltaMillis));
+  glcd.drawString(0, 40, toString(squareCount));
 
   glcd.drawString(0, 50, "Elapsed Time: ");
   glcd.drawString(84, 50, toString(timer.GetElapsedSeconds()));
@@ -87,7 +94,10 @@ void configureInterrupts()
   // Bit 2 = enable PC vector 2 (PCINT23..16)
   // Bit 1 = enable PC vector 1 (PCINT14..8)
   // Bit 0 = enable PC vector 0 (PCINT7..0)
-  PCICR |= 1 << PCIE1;
+  PCICR |= 1 << PCIE1 | 1 << PCIE2;
+  
+  PCMSK2 |=
+    1 << PCINT23;
   
   // Pin change mask registers decide which pins are enabled as triggers
   PCMSK1 |=
@@ -116,6 +126,7 @@ void updateCurrentState()
     case States::idle:
       if (alarmButtonDelta > 0)
       {
+        controlRTCSquareWave(true);
         timer.Reset();
         timer.Start();
         currentState = States::timerRunning;
@@ -134,6 +145,7 @@ void updateCurrentState()
         {
           currentState = States::timerPaused;
           timer.Pause();
+          controlRTCSquareWave(false);
         }
       }
       break;
@@ -145,6 +157,7 @@ void updateCurrentState()
           currentState = States::idle;
           timer.Pause();
           alarm.TurnOff();
+          controlRTCSquareWave(false);
         }
       }
       break;
@@ -154,9 +167,20 @@ void updateCurrentState()
       {
         currentState = States::timerRunning;
         timer.Start();
+        controlRTCSquareWave(true);
       }
       break;
   }
+}
+
+ISR(WDT_vect)
+{
+  Sleepy::watchdogEvent();
+}
+
+ISR(PCINT2_vect)
+{
+  ++squareCount;
 }
 
 ISR(PCINT1_vect)
@@ -181,6 +205,17 @@ void configureLCD()
   glcd.setFont(font_clR6x8);
   
   delay(500);
+}
+
+void configureRTC()
+{
+  RTC.begin();
+  controlRTCSquareWave(false);
+}
+
+void controlRTCSquareWave(bool enable)
+{
+  RTC.controlSquareWaveOutput(enable, RTC_DS1307::OneHz, false);
 }
 
 char * toString(int n)

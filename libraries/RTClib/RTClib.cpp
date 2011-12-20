@@ -16,7 +16,25 @@
  #include <WProgram.h>
 #endif
 
-int i = 0; //The new wire library needs to take an int when you are sending for the zero register
+class DS1307_Registers
+{
+public:
+	enum Values
+	{
+		ClockHalt = 0,
+		Second = 0,
+		Minute = 1,
+		Hour = 2,
+		Day = 3,
+		Date = 4,
+		Month = 5,
+		Year = 6,
+		SquareWave = 7,
+		FirstRAM = 8,
+		LastRAM = 0x3F
+	};
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // utility code, some of this could be exposed in the DateTime API if needed
 
@@ -134,94 +152,66 @@ uint8_t RTC_DS1307::begin(void) {
   return 1;
 }
 
-
 #if (ARDUINO >= 100)
-
-uint8_t RTC_DS1307::isrunning(void) {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire.write(i);	
-  Wire.endTransmission();
-
-  Wire.requestFrom(DS1307_ADDRESS, 1);
-  uint8_t ss = Wire.read();
-  return !(ss>>7);
-}
-
-void RTC_DS1307::adjust(const DateTime& dt) {
-    Wire.beginTransmission(DS1307_ADDRESS);
-    Wire.write(i);
-    Wire.write(bin2bcd(dt.second()));
-    Wire.write(bin2bcd(dt.minute()));
-    Wire.write(bin2bcd(dt.hour()));
-    Wire.write(bin2bcd(0));
-    Wire.write(bin2bcd(dt.day()));
-    Wire.write(bin2bcd(dt.month()));
-    Wire.write(bin2bcd(dt.year() - 2000));
-    Wire.write(i);
-    Wire.endTransmission();
-}
-
-DateTime RTC_DS1307::now() {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire.write(i);	
-  Wire.endTransmission();
-  
-  Wire.requestFrom(DS1307_ADDRESS, 7);
-  uint8_t ss = bcd2bin(Wire.read() & 0x7F);
-  uint8_t mm = bcd2bin(Wire.read());
-  uint8_t hh = bcd2bin(Wire.read());
-  Wire.read();
-  uint8_t d = bcd2bin(Wire.read());
-  uint8_t m = bcd2bin(Wire.read());
-  uint16_t y = bcd2bin(Wire.read()) + 2000;
-  
-  return DateTime (y, m, d, hh, mm, ss);
-}
-
+#define Wire_write(b) Wire.write(b)
+#define Wire_read() Wire.read()
 #else
+#define Wire_write(b) Wire.send(b)
+#define Wire_read() Wire.receive()
+#endif
 
 uint8_t RTC_DS1307::isrunning(void) {
   Wire.beginTransmission(DS1307_ADDRESS);
-  Wire.send(i);	
+  Wire_write(DS1307_Registers::ClockHalt);
   Wire.endTransmission();
 
   Wire.requestFrom(DS1307_ADDRESS, 1);
-  uint8_t ss = Wire.receive();
+  uint8_t ss = Wire_read();
   return !(ss>>7);
 }
 
 void RTC_DS1307::adjust(const DateTime& dt) {
     Wire.beginTransmission(DS1307_ADDRESS);
-    Wire.send(i);
-    Wire.send(bin2bcd(dt.second()));
-    Wire.send(bin2bcd(dt.minute()));
-    Wire.send(bin2bcd(dt.hour()));
-    Wire.send(bin2bcd(0));
-    Wire.send(bin2bcd(dt.day()));
-    Wire.send(bin2bcd(dt.month()));
-    Wire.send(bin2bcd(dt.year() - 2000));
-    Wire.send(i);
+    Wire_write(DS1307_Registers::Second);
+    Wire_write(bin2bcd(dt.second()));
+    Wire_write(bin2bcd(dt.minute()));
+    Wire_write(bin2bcd(dt.hour()));
+    Wire_write(bin2bcd(0));
+    Wire_write(bin2bcd(dt.day()));
+    Wire_write(bin2bcd(dt.month()));
+    Wire_write(bin2bcd(dt.year() - 2000));
     Wire.endTransmission();
 }
 
 DateTime RTC_DS1307::now() {
   Wire.beginTransmission(DS1307_ADDRESS);
-  Wire.send(i);	
+  Wire_write(DS1307_Registers::Second);
   Wire.endTransmission();
   
   Wire.requestFrom(DS1307_ADDRESS, 7);
-  uint8_t ss = bcd2bin(Wire.receive() & 0x7F);
-  uint8_t mm = bcd2bin(Wire.receive());
-  uint8_t hh = bcd2bin(Wire.receive());
-  Wire.receive();
-  uint8_t d = bcd2bin(Wire.receive());
-  uint8_t m = bcd2bin(Wire.receive());
-  uint16_t y = bcd2bin(Wire.receive()) + 2000;
+  uint8_t ss = bcd2bin(Wire_read() & 0x7F);
+  uint8_t mm = bcd2bin(Wire_read());
+  uint8_t hh = bcd2bin(Wire_read());
+  Wire_read();	// ignore the day-of-week value
+  uint8_t d = bcd2bin(Wire_read());
+  uint8_t m = bcd2bin(Wire_read());
+  uint16_t y = bcd2bin(Wire_read()) + 2000;
   
   return DateTime (y, m, d, hh, mm, ss);
 }
 
-#endif
+void RTC_DS1307::controlSquareWaveOutput(bool enable, SquareWaveFrequency freq, bool disabledOutputLevel)
+{
+	byte squareWaveControlRegisterValue =
+		(disabledOutputLevel ? 1 : 0) << 7 |
+		(enable ? 1 : 0) << 4 |
+		(freq & 0x3);
+
+	Wire.beginTransmission(DS1307_ADDRESS);
+	Wire_write(DS1307_Registers::SquareWave);
+	Wire_write(squareWaveControlRegisterValue);
+	Wire.endTransmission();
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
