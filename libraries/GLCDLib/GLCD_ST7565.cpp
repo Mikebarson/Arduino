@@ -37,20 +37,17 @@
               ? 5 \
               : pin
 
-#ifndef GLCD_DEFINITIONS
-#define GLCD_DEFINITIONS
-#define PIN_SID 12
-#define PIN_SCLK 11
-#define PIN_A0 10
-#define PIN_RST 8
+#define PIN_SID 13
+#define PIN_SCLK 12
+#define PIN_A0 11
+#define PIN_RST 10
 #define PIN_BACKLIGHT 3
 
 // If the top line is appearing halfway down the screen, try the other mode.
-//#define PAGE_FLIP 0x7
+// #define PAGE_FLIP 0x7
 #define PAGE_FLIP 0x3
 
 #define LCDUNUSEDSTARTBYTES 1
-#endif
 
 #define PORT_SID GetPort(PIN_SID)
 #define BIT_SID GetBit(PIN_SID)

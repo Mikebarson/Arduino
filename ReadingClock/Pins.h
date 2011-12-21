@@ -1,15 +1,35 @@
+#ifndef _pins_h
+#define _pins_h
+
+/* Wire colors
+BacklightBlue - Blue
+BacklightGreen - Green
+BacklightRed - Red
+lcdSID - Orange
+lcdSCLK - Yellow
+lcdA0 - Brown
+lcdRST - Gray
+SquareWave - Purple
+AlarmFlash - White
+PiezoFreq - Yellow
+PiezoEnable - Green
+*/
+
 class Pins
 {
   public:
     enum Values
     {
-      lcdBacklightBlue = 9,
+      lcdBacklightRed = 9,
       lcdBacklightGreen = 6,
-      lcdBacklightRed = 5,
-      lcdSID = 12,
-      lcdSCLK = 11,
-      lcdA0 = 10,
-      lcdRST = 8,
+      lcdBacklightBlue = 5,
+      lcdSID = 13,
+      lcdSCLK = 12,
+      lcdA0 = 11,
+      lcdRST = 10,  
+      RTC_SQW = 7,
+      RTC_SDA = A4,
+      RTC_SCL = A5,
       encoderA = A0,
       encoderB = A1,
       encoderButton = A2,
@@ -20,3 +40,4 @@ class Pins
     };
 };
 
+#endif _pins_h

@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "GLCD_Definitions.h"
 #include <GLCD_ST7565.h>
 #include <JeeLib.h>
 #include <avr/pgmspace.h>
@@ -25,7 +24,7 @@
 #include "Piezo.h"
 
 static const long lightsOffDelayMillis = 5000;
-static const int defaultContrast = 30;
+static const int defaultContrast = 0x15;
 
 GLCD_ST7565 glcd;
 RTC_DS1307 RTC;
@@ -54,7 +53,7 @@ void setup()
 {
   Wire.begin();
   
-  lcdBacklight.SetColor(255, 0, 0);
+  lcdBacklight.SetColor(255, 255, 255);
   
   configureLCD();
   configureInterrupts();
@@ -195,9 +194,10 @@ ISR(PCINT1_vect)
 
 void configureLCD()
 {
+  /*
   contrast = EEPROM.read(EEPROMAddresses::lcdContrast);
   if (contrast == 0)
-  {
+*/  {
     contrast = defaultContrast;
   }
 
