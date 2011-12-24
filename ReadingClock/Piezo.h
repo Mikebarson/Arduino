@@ -11,5 +11,6 @@ class Piezo
     
   private:
     Tone _tone;
+    int _frequency;
     FastPin _onOffPin;
 };

@@ -23,9 +23,10 @@ class GLCD_ST7565 {
 public:
     GLCD_ST7565 () {}
 
-    static void begin(byte contrast =0x15); // use 0x1A when powered from 4.2V
+    static void begin(byte contrast = 0x15); // use 0x1A when powered from 4.2V
                                         // see http://forum.jeelabs.net/node/47
     static void backLight(byte level);
+    static void setContrast(byte contrast);
     static void clear();
     static void refresh();
 

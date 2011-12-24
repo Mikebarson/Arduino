@@ -1,13 +1,18 @@
 #include "Timer.h"
 
 Timer::Timer()
-  : running(false), elapsedMilliseconds(0), timespanMillieconds(0)
+  : running(false), elapsedMilliseconds(0), timespanMilliseconds(0)
 {
 }
 
 void Timer::SetTimespan(int seconds)
 {
-  timespanMillieconds = seconds * 1000;
+  timespanMilliseconds = seconds * 1000L;
+}
+
+long Timer::GetTimespan()
+{
+  return timespanMilliseconds / 1000L;
 }
 
 void Timer::Reset()
@@ -35,14 +40,14 @@ void Timer::Update(long deltaMilliseconds)
   elapsedMilliseconds += deltaMilliseconds;
 }
 
-int Timer::GetElapsedSeconds()
+long Timer::GetElapsedSeconds()
 {
-  return elapsedMilliseconds / 1000;
+  return elapsedMilliseconds / 1000L;
 }
 
 bool Timer::IsExpired()
 {
-  return elapsedMilliseconds > timespanMillieconds;
+  return elapsedMilliseconds > timespanMilliseconds;
 }
 
 

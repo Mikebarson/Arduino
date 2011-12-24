@@ -4,10 +4,10 @@ class EEPROMAddresses
     enum Values
     {
       lcdContrast = 0,
-      lcdBacklightRed = 1,
-      lcdBacklightGreen = 2,
-      lcdBacklightBlue = 3,
-      
+      lcdRed = 1,
+      lcdGreen = 2,
+      lcdBlue = 3,
+      timerMinutes = 4,
     };
 };
 

@@ -7,8 +7,9 @@ BacklightGreen - Green
 BacklightRed - Red
 lcdSID - Orange
 lcdSCLK - Yellow
-lcdA0 - Brown
-lcdRST - Gray
+lcdA0 - Gray
+lcdRST - Purple
+lcdCS - White (straight to ground)
 SquareWave - Purple
 AlarmFlash - White
 PiezoFreq - Yellow
@@ -26,7 +27,8 @@ class Pins
       lcdSID = 13,
       lcdSCLK = 12,
       lcdA0 = 11,
-      lcdRST = 10,  
+      lcdRST = 10,
+      lcdCS = 8,
       RTC_SQW = 7,
       RTC_SDA = A4,
       RTC_SCL = A5,

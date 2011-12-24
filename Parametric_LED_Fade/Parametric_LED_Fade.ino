@@ -1,7 +1,7 @@
 /*
  Fade
  
- This example shows how to fade an LED on pin 9
+ This example shows how to fade an LED
  using the analogWrite() function.
  
  This example code is in the public domain.
@@ -11,13 +11,15 @@ long fadeDurationMicroseconds = 1000 * 1000L;
 int maxBrightness = 64;
 int minBrightness = 0;
 
+const int ledPin = 9;
+
 long currentFadeCycleStartMicroseconds = 0;
 int direction = 1;
 
 void setup()  {
   Serial.begin(9600);
-  // declare pin 9 to be an output:
-  pinMode(9, OUTPUT);
+  // declare the ledPin to be an output:
+  pinMode(ledPin, OUTPUT);
   
   currentFadeCycleStartMicroseconds = micros();
 } 
@@ -42,7 +44,7 @@ void loop()  {
   }
   int brightness = minBrightness + ((maxBrightness - minBrightness) * cycleCompletePercentage);
 
-  // set the brightness of pin 9:
-  analogWrite(9, brightness);
+  // set the brightness of the led:
+  analogWrite(ledPin, brightness);
 }
 

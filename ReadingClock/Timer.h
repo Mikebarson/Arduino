@@ -4,6 +4,7 @@ class Timer
     Timer();
     
     void SetTimespan(int seconds);
+    long GetTimespan();
 
     void Reset();
     void Start();
@@ -12,12 +13,12 @@ class Timer
     void Update(long deltaMilliseconds);    
     bool IsExpired();
     
-    int GetElapsedSeconds();
+    long GetElapsedSeconds();
     
   private:
     bool running;
 
     long elapsedMilliseconds;
-    int timespanMillieconds;
+    long timespanMilliseconds;
 };
 

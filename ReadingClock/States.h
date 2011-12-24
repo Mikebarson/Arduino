@@ -8,6 +8,7 @@ class States
       timerRunningAndExpired,
       timerPaused,
       timerStopped,
+      menu,
     };
 };
 

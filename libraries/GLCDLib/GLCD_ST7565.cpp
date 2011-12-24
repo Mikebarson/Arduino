@@ -124,7 +124,7 @@ static void st7565_Data(byte c) {
     SPIWrite(c);
 }
 
-static void st7565_Set_Brightness(byte val) {
+void GLCD_ST7565::setContrast(byte val) {
     st7565_Command(CMD_SET_VOLUME_FIRST);
     st7565_Command(CMD_SET_VOLUME_SECOND | (val & 0x3F));
 }
@@ -164,8 +164,7 @@ void GLCD_ST7565::begin(byte contrast) {
     st7565_Init();
     st7565_Command(CMD_DISPLAY_ON);
     st7565_Command(CMD_SET_ALLPTS_NORMAL);
-    st7565_Set_Brightness(contrast); // strictly speaking this is the contrast
-                              // of the LCD panel, the twist on the crystals.
+    setContrast(contrast);
     clear();
 }
 

@@ -19,7 +19,7 @@ void setup() {
   digitalWrite(3, LOW);
   digitalWrite(4, LOW);
   
-  myTone.begin(3, 4);
+  myTone.begin(3);
   myTone.play(4800);
 }
 
