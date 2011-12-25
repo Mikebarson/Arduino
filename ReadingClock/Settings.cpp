@@ -15,23 +15,34 @@ struct EEPROMAddresses
 };
 
 static const int defaultContrast = 0x18;
-
 const byte Settings::minLcdContrast = 20;
 const byte Settings::maxLcdContrast = 45;
 
+static const int defaultTimerMinutes = 15;
 const byte Settings::minTimerMinutes = 1;
 const byte Settings::maxTimerMinutes = 120;
 
-const long Settings::lightsOffDelayMillis = 5000;
+const long Settings::lightsOffDelayMillis = 10000;
 
 void Settings::readAllSettings()
 {
   lcdContrast = EEPROM.read(EEPROMAddresses::lcdContrast);
+  if (lcdContrast < minLcdContrast ||
+      lcdContrast > maxLcdContrast)
+  {
+    lcdContrast = defaultContrast;
+  }
+  
   lcdRed = EEPROM.read(EEPROMAddresses::lcdRed);
   lcdGreen = EEPROM.read(EEPROMAddresses::lcdGreen);
   lcdBlue = EEPROM.read(EEPROMAddresses::lcdBlue);
   
   timerMinutes = EEPROM.read(EEPROMAddresses::timerMinutes);
+  if (timerMinutes < minTimerMinutes ||
+      timerMinutes > maxTimerMinutes)
+  {
+    timerMinutes = defaultTimerMinutes;
+  }
 }
 
 void Settings::writeTimerMinutes()
