@@ -418,7 +418,11 @@ void DrawSetTimerMenu()
 {
   glcd.drawString(0, 0, "Setting Timer...");
   int x = glcd.drawString(0, 20, formatString("%d", settings.timerMinutes));
-  glcd.drawLine(0, 30, x, 30, WHITE);
+  if (RTC.now().second() % 2 == 0)
+  {
+    glcd.drawLine(0, 30, x, 30, WHITE);
+  }
+  
   glcd.drawString(x, 20, " minutes");
 }
 
