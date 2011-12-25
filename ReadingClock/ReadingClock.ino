@@ -438,7 +438,8 @@ void drawMenuItem(int y, char * text, bool selected)
 
 void DrawSetTimerMenu()
 {
-  glcd.drawString(0, 0, formatString("%d minutes", settings.timerMinutes));
+  glcd.drawString(0, 0, "Setting Timer...");
+  glcd.drawString(0, 20, formatString("%d minutes", settings.timerMinutes));
 }
 
 void DrawSetContrastMenu()
@@ -456,7 +457,8 @@ void DrawSetContrastMenu()
 
 void DrawSetBacklightColorMenu()
 {
-  glcd.drawString(0, 0, GetColorName());
+  glcd.drawString(0, 0, "Setting Color...");
+  glcd.drawString(0, 20, formatString("Color: %s", GetColorName()));
 }
 
 char * GetColorName()
