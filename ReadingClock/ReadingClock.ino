@@ -51,6 +51,8 @@ int currentMenuMax;
 
 Settings settings;
 
+char * formatString(char *format, ...);
+
 void setup()
 {
   Serial.begin(57600);
@@ -86,36 +88,38 @@ void loop()
   else
   {
     DrawHomeScreen();
-    
-    /*
-    glcd.drawString(0, 0, toString(encoderCountRaw));
-    glcd.drawString(0, 10, toString(encoderButtonPressCount));
-    glcd.drawString(0, 20, toString(alarmButtonPressCount));
-    glcd.drawString(0, 30, toString(timeDeltaMillis));
-    glcd.drawString(0, 40, toString(squareCount));
-    glcd.drawString(0, 50, "Elapsed Time: ");
-    glcd.drawString(84, 50, toString(timer.GetElapsedSeconds()));
-    */
   }
 
   glcd.refresh();
 }
 
+void DrawDebuggingScreen(int timeDeltaMillis)
+{
+  glcd.drawString(0, 0, toString(encoderCountRaw));
+  glcd.drawString(0, 10, toString(encoderButtonPressCount));
+  glcd.drawString(0, 20, toString(alarmButtonPressCount));
+  glcd.drawString(0, 30, toString(timeDeltaMillis));
+  glcd.drawString(0, 40, toString(squareCount));
+  glcd.drawString(0, 50, "Elapsed Time: ");
+  glcd.drawString(84, 50, toString(timer.GetElapsedSeconds()));
+}
+
 void DrawHomeScreen()
 {
     int x;
+    char * line;
     
     DateTime now = RTC.now();
     int hour = now.hour();
     bool pm = hour > 11;
     hour %= 12;
-    x = glcd.drawString(0, 0, "Time: ");
-    x = glcd.drawString(x, 0, hour == 0 ? "12" : toString(hour));
-    x = glcd.drawString(x, 0, ":");
-    x = glcd.drawString(x, 0, toString(now.minute()));
-    x = glcd.drawString(x, 0, ":");
-    x = glcd.drawString(x, 0, toString(now.second()));
-    x = glcd.drawString(x, 0, pm ? " PM" : " AM");
+
+    line = formatString("Time: %d:%0.2d:%0.2d %s",
+      hour == 0 ? 12 : hour,
+      now.minute(),
+      now.second(),
+      pm ? " PM" : " AM");
+    glcd.drawString(0, 0, line);
     
     if (currentState == States::timerPaused)
     {
@@ -128,16 +132,12 @@ void DrawHomeScreen()
     
     long secondsElapsed = timer.GetElapsedSeconds();
     
-    x = glcd.drawString(0, 30, toString(secondsElapsed / 60));
-    x = glcd.drawString(x, 30, ":");
-    x = glcd.drawString(x, 30, toString(secondsElapsed % 60));
-    x = glcd.drawString(x, 30, " elapsed");
+    line = formatString("%0.2d:%0.2d elapsed", secondsElapsed / 60, secondsElapsed % 60);
+    glcd.drawString(0, 30, line);
     
     long secondsRemaining = timer.GetTimespan() - secondsElapsed;
-    x = glcd.drawString(0, 40, toString(secondsRemaining / 60));
-    x = glcd.drawString(x, 40, ":");
-    x = glcd.drawString(x, 40, toString(secondsRemaining % 60));
-    x = glcd.drawString(x, 40, " remaining");
+    line = formatString("%0.2d:%0.2d remaining", secondsRemaining / 60, secondsRemaining % 60);
+    glcd.drawString(0, 40, line);
 }
 
 void DrawMenu()
@@ -276,9 +276,14 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
       break;
       
     case 1:  // Set Timer
+      if (encoderDelta != 0)
+      {
+        settings.timerMinutes = menuEncoderValue + 1;
+      }
+      
       if (alarmButtonDelta > 0)
       {
-        SaveTimerMinutes(menuEncoderValue);
+        SaveTimerMinutes(menuEncoderValue + 1);
         SetMenuState(0);
       }
       break;
@@ -326,6 +331,7 @@ void SaveScreenContrast(byte contrast)
 
 void UpdateScreenContrast(byte contrast)
 {
+  settings.lcdContrast = contrast;
   glcd.setContrast(contrast);
 }
 
@@ -392,11 +398,11 @@ void SetMenuState(int state)
       break;
     case 1:  // Set Timer
       menuEncoderValue = settings.timerMinutes;
-      numItems = 120;
+      numItems = Settings::maxTimerMinutes - Settings::minTimerMinutes + 1;
       break;
     case 2:  // Set Contrast
       {
-        numItems = (Settings::maxLcdContrast - Settings::minLcdContrast) + 1;
+        numItems = Settings::maxLcdContrast - Settings::minLcdContrast + 1;
         menuEncoderValue = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast)) - Settings::minLcdContrast;
       }
       break;
@@ -423,21 +429,29 @@ void DrawRootMenu()
 
 void drawMenuItem(int y, char * text, bool selected)
 {
-  int x = glcd.drawString(10, y, text);
+  int x = glcd.drawString(7, y, text);
   if (selected)
   {
-    glcd.fillCircle(5, y + 5, 3, 1);
+    glcd.fillTriangle(2, y, 2, y + 6, 5, y + 3, WHITE);
   }
 }
 
 void DrawSetTimerMenu()
 {
-  glcd.drawString(0, 0, toString(menuEncoderValue));
+  glcd.drawString(0, 0, formatString("%d minutes", settings.timerMinutes));
 }
 
 void DrawSetContrastMenu()
 {
-  glcd.drawString(0, 0, toString(menuEncoderValue + Settings::minLcdContrast));
+  static const int barWidth = 118;
+  static const int barHeight = 10;
+  
+  float percentage = (float)(settings.lcdContrast - Settings::minLcdContrast) / (Settings::maxLcdContrast - Settings::minLcdContrast);
+  int fillWidth = percentage * barWidth;
+  
+  glcd.drawString(0, 0, "Adjusting Contrast...");
+  glcd.drawRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, barWidth, barHeight, WHITE);
+  glcd.fillRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, fillWidth, barHeight, WHITE);
 }
 
 void DrawSetBacklightColorMenu()
@@ -508,12 +522,20 @@ void controlRTCSquareWave(bool enable)
   RTC.controlSquareWaveOutput(enable, RTC_DS1307::OneHz, false);
 }
 
+char * formatString(char *format, ...)
+{
+  static char buf[50];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buf, sizeof(buf), format, args);
+  va_end(args);
+  
+  return buf;
+}
+
 char * toString(int n)
 {
-  static char buf[24];
-
-  snprintf(buf, 24, "%0.2d", n);
-  return buf;
+  return formatString("%0.2d", n);
 }
 
 int getEncoderDelta()
