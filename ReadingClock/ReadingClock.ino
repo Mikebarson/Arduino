@@ -22,6 +22,7 @@
 #include "Led.h"
 #include "Piezo.h"
 #include "Settings.h"
+#include "Colors.h"
 
 GLCD_ST7565 glcd;
 RTC_DS1307 RTC;
@@ -106,7 +107,6 @@ void DrawDebuggingScreen(int timeDeltaMillis)
 
 void DrawHomeScreen()
 {
-    int x;
     char * line;
     
     DateTime now = RTC.now();
@@ -126,17 +126,17 @@ void DrawHomeScreen()
       // Flash the "paused" text
       if (now.second() % 2 == 0)
       {
-        x = glcd.drawString(0, 20, "Timer Paused");
+        glcd.drawString(0, 20, "Timer Paused");
       }
     }
     
     long secondsElapsed = timer.GetElapsedSeconds();
     
-    line = formatString("%0.2d:%0.2d elapsed", secondsElapsed / 60, secondsElapsed % 60);
+    line = formatString("%0.2ld:%0.2ld elapsed", secondsElapsed / 60, secondsElapsed % 60);
     glcd.drawString(0, 30, line);
     
     long secondsRemaining = timer.GetTimespan() - secondsElapsed;
-    line = formatString("%0.2d:%0.2d remaining", secondsRemaining / 60, secondsRemaining % 60);
+    line = formatString("%0.2ld:%0.2ld remaining", secondsRemaining / 60, secondsRemaining % 60);
     glcd.drawString(0, 40, line);
 }
 
@@ -335,40 +335,19 @@ void UpdateScreenContrast(byte contrast)
   glcd.setContrast(contrast);
 }
 
-void GetColor(int colorPicker, byte *red, byte *green, byte *blue)
-{
-  switch (colorPicker)
-  {
-    case 0:
-      *red = 255;
-      *green = 0;
-      *blue = 0;
-      break;
-      
-    case 1:
-      *red = 0;
-      *green = 255;
-      *blue = 0;
-      break;
-      
-    case 2:
-      *red = 0;
-      *green = 0;
-      *blue = 255;
-  }
-}
-
 void SaveBacklightColor()
 {
-  GetColor(menuEncoderValue, &settings.lcdRed, &settings.lcdGreen, &settings.lcdBlue);
+  Color color = Colors::GetColor(menuEncoderValue);
+  settings.lcdRed = color.red;
+  settings.lcdGreen = color.green;
+  settings.lcdBlue = color.blue;
   settings.writeLcdColor();
 }
 
 void UpdateBacklightColor()
 {
-  byte red, green, blue;
-  GetColor(menuEncoderValue, &red, &green, &blue);
-  lcdBacklight.SetColor(red, green, blue);
+  Color color = Colors::GetColor(menuEncoderValue);
+  lcdBacklight.SetColor(color.red, color.green, color.blue);
 }
 
 void PauseTimer()
@@ -407,13 +386,12 @@ void SetMenuState(int state)
       }
       break;
     case 3:  // Set Backlight color
-      if (settings.lcdRed != 0)
+      menuEncoderValue = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
+      if (menuEncoderValue < 0)
+      {
         menuEncoderValue = 0;
-      if (settings.lcdGreen != 0)
-        menuEncoderValue = 1;
-      if (settings.lcdBlue != 0)
-        menuEncoderValue = 2;
-      numItems = 3;
+      }
+      numItems = Colors::NumColors();
       break;
   }
   
@@ -439,7 +417,9 @@ void drawMenuItem(int y, char * text, bool selected)
 void DrawSetTimerMenu()
 {
   glcd.drawString(0, 0, "Setting Timer...");
-  glcd.drawString(0, 20, formatString("%d minutes", settings.timerMinutes));
+  int x = glcd.drawString(0, 20, formatString("%d", settings.timerMinutes));
+  glcd.drawLine(0, 30, x, 30, WHITE);
+  glcd.drawString(x, 20, " minutes");
 }
 
 void DrawSetContrastMenu()
@@ -457,23 +437,10 @@ void DrawSetContrastMenu()
 
 void DrawSetBacklightColorMenu()
 {
-  glcd.drawString(0, 0, "Setting Color...");
-  glcd.drawString(0, 20, formatString("Color: %s", GetColorName()));
-}
-
-char * GetColorName()
-{
-  switch (menuEncoderValue)
-  {
-    case 0:
-      return "Red";
-    case 1:
-      return "Green";
-    case 2:
-      return "Blue";
-  }
+  Color color = Colors::GetColor(menuEncoderValue);
   
-  return "Oops";
+  glcd.drawString(0, 0, "Setting Color...");
+  glcd.drawString(0, 20, formatString("Color: %s", color.name));
 }
 
 /*
