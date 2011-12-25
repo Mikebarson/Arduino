@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <EEPROM.h>
 
 #include <JeeLib.h>
 #include <GLCD_ST7565.h>
@@ -9,12 +10,10 @@
 
 #include <RTClib.h>
 
-#include <EEPROM.h>
 #include <Tone.h>
 
 #include "Pins.h"
 #include "LCDBacklight.h"
-#include "EEPROMAddresses.h"
 #include "States.h"
 #include "Timer.h"
 #include "Alarm.h"
@@ -22,9 +21,7 @@
 #include "Button.h"
 #include "Led.h"
 #include "Piezo.h"
-
-static const long lightsOffDelayMillis = 5000;
-static const int defaultContrast = 0x18;
+#include "Settings.h"
 
 GLCD_ST7565 glcd;
 RTC_DS1307 RTC;
@@ -45,10 +42,6 @@ volatile bool turnLightsOn = true;
 
 int currentState = States::idle;
 
-const int minContrastValue = 20;
-const int maxContrastValue = 50;
-int currentContrastValue;
-
 volatile int squareCount;
 
 int beforeMenuState;
@@ -56,16 +49,19 @@ int menuState;
 int menuEncoderValue;
 int currentMenuMax;
 
+Settings settings;
+
 void setup()
 {
   Serial.begin(57600);
+  
+  settings.readAllSettings();
+  
   configureLCD();
   configureInterrupts();
-
   configureRTC();
 
-  int timerMinutes = EEPROM.read(EEPROMAddresses::timerMinutes);
-  timer.SetTimespan(timerMinutes * 60);
+  timer.SetTimespan(settings.timerMinutes * 60);
 
   encoder.Init();
   getTimeDeltaMillis();
@@ -89,25 +85,7 @@ void loop()
   }
   else
   {
-    if (currentState == States::timerPaused)
-    {
-      glcd.drawString(0, 0, "Timer Paused");
-    }
-    
-    long secondsElapsed = timer.GetElapsedSeconds();
-    
-    int x;
-    
-    x = glcd.drawString(0, 30, toString(secondsElapsed / 60));
-    x = glcd.drawString(x, 30, ":");
-    x = glcd.drawString(x, 30, toString(secondsElapsed % 60));
-    x = glcd.drawString(x, 30, " elapsed");
-    
-    long secondsRemaining = timer.GetTimespan() - secondsElapsed;
-    x = glcd.drawString(0, 40, toString(secondsRemaining / 60));
-    x = glcd.drawString(x, 40, ":");
-    x = glcd.drawString(x, 40, toString(secondsRemaining % 60));
-    x = glcd.drawString(x, 40, " remaining");
+    DrawHomeScreen();
     
     /*
     glcd.drawString(0, 0, toString(encoderCountRaw));
@@ -121,6 +99,45 @@ void loop()
   }
 
   glcd.refresh();
+}
+
+void DrawHomeScreen()
+{
+    int x;
+    
+    DateTime now = RTC.now();
+    int hour = now.hour();
+    bool pm = hour > 11;
+    hour %= 12;
+    x = glcd.drawString(0, 0, "Time: ");
+    x = glcd.drawString(x, 0, hour == 0 ? "12" : toString(hour));
+    x = glcd.drawString(x, 0, ":");
+    x = glcd.drawString(x, 0, toString(now.minute()));
+    x = glcd.drawString(x, 0, ":");
+    x = glcd.drawString(x, 0, toString(now.second()));
+    x = glcd.drawString(x, 0, pm ? " PM" : " AM");
+    
+    if (currentState == States::timerPaused)
+    {
+      // Flash the "paused" text
+      if (now.second() % 2 == 0)
+      {
+        x = glcd.drawString(0, 20, "Timer Paused");
+      }
+    }
+    
+    long secondsElapsed = timer.GetElapsedSeconds();
+    
+    x = glcd.drawString(0, 30, toString(secondsElapsed / 60));
+    x = glcd.drawString(x, 30, ":");
+    x = glcd.drawString(x, 30, toString(secondsElapsed % 60));
+    x = glcd.drawString(x, 30, " elapsed");
+    
+    long secondsRemaining = timer.GetTimespan() - secondsElapsed;
+    x = glcd.drawString(0, 40, toString(secondsRemaining / 60));
+    x = glcd.drawString(x, 40, ":");
+    x = glcd.drawString(x, 40, toString(secondsRemaining % 60));
+    x = glcd.drawString(x, 40, " remaining");
 }
 
 void DrawMenu()
@@ -173,11 +190,6 @@ void updateCurrentState()
   int alarmButtonDelta = getAlarmButtonDelta();
   int encoderButtonDelta = getEncoderButtonDelta();
 
-  if (encoderButtonDelta > 0)
-  {
-    encoderCountRaw = 0;
-  }
-  
   switch (currentState)
   {
     case States::idle:
@@ -274,12 +286,12 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
     case 2: // Set Contrast
       if (encoderDelta != 0)
       {
-        UpdateScreenContrast(menuEncoderValue + minContrastValue);
+        UpdateScreenContrast(menuEncoderValue + Settings::minLcdContrast);
       }
       
       if (alarmButtonDelta > 0)
       {
-        SaveScreenContrast(menuEncoderValue + minContrastValue);
+        SaveScreenContrast(menuEncoderValue + Settings::minLcdContrast);
         SetMenuState(0);
       }
       break;
@@ -301,14 +313,20 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
 
 void SaveTimerMinutes(byte timerMinutes)
 {
-  Serial.println(timerMinutes);
-  EEPROM.write(EEPROMAddresses::timerMinutes, timerMinutes);
+  settings.timerMinutes = timerMinutes;
+  settings.writeTimerMinutes();
   timer.SetTimespan(timerMinutes * 60);
 }
 
 void SaveScreenContrast(byte contrast)
 {
-  EEPROM.write(EEPROMAddresses::lcdContrast, contrast);
+  settings.lcdContrast = contrast;
+  settings.writeLcdContrast();
+}
+
+void UpdateScreenContrast(byte contrast)
+{
+  glcd.setContrast(contrast);
 }
 
 void GetColor(int colorPicker, byte *red, byte *green, byte *blue)
@@ -336,17 +354,8 @@ void GetColor(int colorPicker, byte *red, byte *green, byte *blue)
 
 void SaveBacklightColor()
 {
-  byte red, green, blue;
-  GetColor(menuEncoderValue, &red, &green, &blue);
-  EEPROM.write(EEPROMAddresses::lcdRed, red);
-  EEPROM.write(EEPROMAddresses::lcdGreen, green);
-  EEPROM.write(EEPROMAddresses::lcdBlue, blue);
-}
-
-void UpdateScreenContrast(byte contrast)
-{
-  currentContrastValue = contrast;
-  glcd.setContrast(contrast);
+  GetColor(menuEncoderValue, &settings.lcdRed, &settings.lcdGreen, &settings.lcdBlue);
+  settings.writeLcdColor();
 }
 
 void UpdateBacklightColor()
@@ -371,7 +380,6 @@ void GoToRootMenu()
 
 void SetMenuState(int state)
 {
-  menuEncoderValue = 0;
   menuState = state;
   
   int numItems;
@@ -379,16 +387,26 @@ void SetMenuState(int state)
   switch (state)
   {
     case 0:
+      menuEncoderValue = 0;
       numItems = 3;
       break;
     case 1:  // Set Timer
+      menuEncoderValue = settings.timerMinutes;
       numItems = 120;
       break;
     case 2:  // Set Contrast
-      numItems = maxContrastValue - minContrastValue;
-      menuEncoderValue = min(maxContrastValue, max(minContrastValue, EEPROM.read(EEPROMAddresses::lcdContrast))) - minContrastValue;
+      {
+        numItems = (Settings::maxLcdContrast - Settings::minLcdContrast) + 1;
+        menuEncoderValue = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast)) - Settings::minLcdContrast;
+      }
       break;
     case 3:  // Set Backlight color
+      if (settings.lcdRed != 0)
+        menuEncoderValue = 0;
+      if (settings.lcdGreen != 0)
+        menuEncoderValue = 1;
+      if (settings.lcdBlue != 0)
+        menuEncoderValue = 2;
       numItems = 3;
       break;
   }
@@ -419,7 +437,7 @@ void DrawSetTimerMenu()
 
 void DrawSetContrastMenu()
 {
-  glcd.drawString(0, 0, toString(currentContrastValue));
+  glcd.drawString(0, 0, toString(menuEncoderValue + Settings::minLcdContrast));
 }
 
 void DrawSetBacklightColorMenu()
@@ -466,23 +484,13 @@ ISR(PCINT1_vect)
 
 void configureLCD()
 {
-  byte red = EEPROM.read(EEPROMAddresses::lcdRed);
-  byte green = EEPROM.read(EEPROMAddresses::lcdGreen);
-  byte blue = EEPROM.read(EEPROMAddresses::lcdBlue);
-
-  lcdBacklight.SetColor(red, green, blue);
+  lcdBacklight.SetColor(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
   
-  byte contrast = EEPROM.read(EEPROMAddresses::lcdContrast);
-  if (contrast == 0)
-  {
-    contrast = defaultContrast;
-  }
-
   // Ensure that the LCD is enabled.
   pinMode(Pins::lcdCS, OUTPUT);
   digitalWrite(Pins::lcdCS, LOW);
 
-  glcd.begin(contrast);
+  glcd.begin(settings.lcdContrast);
   glcd.setFont(font_clR6x8);
   
   delay(500);
@@ -567,7 +575,7 @@ void adjustLights()
     return;
   }
   
-  bool turnLightsOff = (currentMillis - lastLightsOnMillis) > lightsOffDelayMillis;
+  bool turnLightsOff = (currentMillis - lastLightsOnMillis) > Settings::lightsOffDelayMillis;
   if (turnLightsOff)
   {
     lcdBacklight.Disable();
