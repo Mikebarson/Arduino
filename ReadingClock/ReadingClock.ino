@@ -585,6 +585,6 @@ void adjustLights()
 void UpdateAlarmOutputs(bool alarmSignalOn)
 {
   alarmLed.SetState(alarmSignalOn);
-//  piezo.SetState(alarmSignalOn);
+  piezo.SetState(alarmSignalOn);
 }
 
