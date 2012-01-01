@@ -128,14 +128,14 @@
 class Tone
 {
   public:
-    void begin(uint8_t tonePin, uint8_t tonePin_differential = -1);
+    void begin(uint8_t tonePin);
     bool isPlaying();
     void play(uint16_t frequency, uint32_t duration = 0);
     void stop();
 
   private:
-    static uint8_t _tone_count;
-    uint8_t _pin, _pin_differential;
+    static uint8_t _tone_pin_count;
+    uint8_t _pin;
     int8_t _timer;
 };
 

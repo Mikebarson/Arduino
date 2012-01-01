@@ -39,70 +39,73 @@
 #define TIMSK1 TIMSK
 #endif
 
-struct timer_info_t
-{
-  // toggle_count:
-  //  > 0 - duration specified
-  //  = 0 - stopped
-  //  < 0 - infinitely (until stop() method called, or new play() called)
-  volatile int32_t toggle_count;
-  volatile uint8_t *pin_port;
-  volatile uint8_t *pin_differential_port;
-  volatile uint8_t pin_mask;
-  volatile uint8_t pin_differential_mask;
-};
+// timerx_toggle_count:
+//  > 0 - duration specified
+//  = 0 - stopped
+//  < 0 - infinitely (until stop() method called, or new play() called)
 
 #if !defined(__AVR_ATmega8__)
-timer_info_t timer0;
+volatile int32_t timer0_toggle_count;
+volatile uint8_t *timer0_pin_port;
+volatile uint8_t timer0_pin_mask;
 #endif
 
-timer_info_t timer1;
-timer_info_t timer2;
+volatile int32_t timer1_toggle_count;
+volatile uint8_t *timer1_pin_port;
+volatile uint8_t timer1_pin_mask;
+volatile int32_t timer2_toggle_count;
+volatile uint8_t *timer2_pin_port;
+volatile uint8_t timer2_pin_mask;
 
 #if defined(__AVR_ATmega1280__)
-timer_info_t timer3;
-timer_info_t timer4;
-timer_info_t timer5;
+volatile int32_t timer3_toggle_count;
+volatile uint8_t *timer3_pin_port;
+volatile uint8_t timer3_pin_mask;
+volatile int32_t timer4_toggle_count;
+volatile uint8_t *timer4_pin_port;
+volatile uint8_t timer4_pin_mask;
+volatile int32_t timer5_toggle_count;
+volatile uint8_t *timer5_pin_port;
+volatile uint8_t timer5_pin_mask;
 #endif
 
 
 #if defined(__AVR_ATmega1280__)
 
-#define MAX_SIMULTANEOUS_TONES 6
+#define AVAILABLE_TONE_PINS 6
 
 // Leave timers 1, and zero to last.
-const uint8_t PROGMEM tone_to_timer_PGM[] = { 2, 3, 4, 5, 1, 0 };
+const uint8_t PROGMEM tone_pin_to_timer_PGM[] = { 2, 3, 4, 5, 1, 0 };
 
 #elif defined(__AVR_ATmega8__)
 
-#define MAX_SIMULTANEOUS_TONES 2
+#define AVAILABLE_TONE_PINS 2
 
-const uint8_t PROGMEM tone_to_timer_PGM[] = { 2, 1 };
+const uint8_t PROGMEM tone_pin_to_timer_PGM[] = { 2, 1 };
 
 #else
 
-#define MAX_SIMULTANEOUS_TONES 3
+#define AVAILABLE_TONE_PINS 3
 
 // Leave timer 0 to last.
-const uint8_t PROGMEM tone_to_timer_PGM[] = { 2, 1, 0 };
+const uint8_t PROGMEM tone_pin_to_timer_PGM[] = { 2, 1, 0 };
 
 #endif
 
 
+
 // Initialize our pin count
-uint8_t Tone::_tone_count = 0;
+
+uint8_t Tone::_tone_pin_count = 0;
 
 
-void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
+void Tone::begin(uint8_t tonePin)
 {
-  if (_tone_count < MAX_SIMULTANEOUS_TONES)
+  if (_tone_pin_count < AVAILABLE_TONE_PINS)
   {
     _pin = tonePin;
-    _pin_differential = tonePin_differential;
-    _timer = pgm_read_byte(tone_to_timer_PGM + _tone_count);
-    _tone_count++;
-
-    timer_info_t *timer_info_t;
+    _timer = pgm_read_byte(tone_pin_to_timer_PGM + _tone_pin_count);
+    _tone_pin_count++;
 
     // Set timer specific stuff
     // All timers in CTC mode
@@ -117,7 +120,8 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR0B = 0;
         bitWrite(TCCR0A, WGM01, 1);
         bitWrite(TCCR0B, CS00, 1);
-        timer_info_t = &timer0;
+        timer0_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer0_pin_mask = digitalPinToBitMask(_pin);
         break;
 #endif
 
@@ -127,7 +131,8 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR1B = 0;
         bitWrite(TCCR1B, WGM12, 1);
         bitWrite(TCCR1B, CS10, 1);
-        timer_info_t = &timer1;
+        timer1_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer1_pin_mask = digitalPinToBitMask(_pin);
         break;
       case 2:
         // 8 bit timer
@@ -135,7 +140,8 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR2B = 0;
         bitWrite(TCCR2A, WGM21, 1);
         bitWrite(TCCR2B, CS20, 1);
-        timer_info_t = &timer2;
+        timer2_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer2_pin_mask = digitalPinToBitMask(_pin);
         break;
 
 #if defined(__AVR_ATmega1280__)
@@ -145,7 +151,8 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR3B = 0;
         bitWrite(TCCR3B, WGM32, 1);
         bitWrite(TCCR3B, CS30, 1);
-        timer_info_t = &timer3;
+        timer3_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer3_pin_mask = digitalPinToBitMask(_pin);
         break;
       case 4:
         // 16 bit timer
@@ -153,7 +160,8 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR4B = 0;
         bitWrite(TCCR4B, WGM42, 1);
         bitWrite(TCCR4B, CS40, 1);
-        timer_info_t = &timer4;
+        timer4_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer4_pin_mask = digitalPinToBitMask(_pin);
         break;
       case 5:
         // 16 bit timer
@@ -161,15 +169,11 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
         TCCR5B = 0;
         bitWrite(TCCR5B, WGM52, 1);
         bitWrite(TCCR5B, CS50, 1);
-        timer_info_t = &timer5;
+        timer5_pin_port = portOutputRegister(digitalPinToPort(_pin));
+        timer5_pin_mask = digitalPinToBitMask(_pin);
         break;
 #endif
     }
-
-    timer_info_t->pin_port = portOutputRegister(digitalPinToPort(_pin));
-    timer_info_t->pin_differential_port = portOutputRegister(digitalPinToPort(_pin_differential));
-    timer_info_t->pin_mask = digitalPinToBitMask(_pin);
-    timer_info_t->pin_differential_mask = digitalPinToBitMask(_pin_differential);
   }
   else
   {
@@ -179,7 +183,9 @@ void Tone::begin(uint8_t tonePin, uint8_t tonePin_differential)
 }
 
 
+
 // frequency (in hertz) and duration (in milliseconds).
+
 void Tone::play(uint16_t frequency, uint32_t duration)
 {
   uint8_t prescalarbits = 0b001;
@@ -190,7 +196,6 @@ void Tone::play(uint16_t frequency, uint32_t duration)
   {
     // Set the pinMode as OUTPUT
     pinMode(_pin, OUTPUT);
-    pinMode(_pin_differential, OUTPUT);
     
     // if we are using an 8 bit timer, scan through prescalars to find the best fit
     if (_timer == 0 || _timer == 2)
@@ -262,7 +267,9 @@ void Tone::play(uint16_t frequency, uint32_t duration)
       else if (_timer == 5)
         TCCR5B = (TCCR5B & 0b11111000) | prescalarbits;
 #endif
+
     }
+    
 
     // Calculate the toggle count
     if (duration > 0)
@@ -279,46 +286,45 @@ void Tone::play(uint16_t frequency, uint32_t duration)
     // then turn on the interrupts
     switch (_timer)
     {
+
 #if !defined(__AVR_ATmega8__)
       case 0:
         OCR0A = ocr;
-        timer0.toggle_count = toggle_count;
+        timer0_toggle_count = toggle_count;
         bitWrite(TIMSK0, OCIE0A, 1);
         break;
 #endif
 
       case 1:
         OCR1A = ocr;
-        timer1.toggle_count = toggle_count;
+        timer1_toggle_count = toggle_count;
         bitWrite(TIMSK1, OCIE1A, 1);
         break;
       case 2:
         OCR2A = ocr;
-        timer2.toggle_count = toggle_count;
+        timer2_toggle_count = toggle_count;
         bitWrite(TIMSK2, OCIE2A, 1);
         break;
 
 #if defined(__AVR_ATmega1280__)
       case 3:
         OCR3A = ocr;
-        timer3.toggle_count = toggle_count;
+        timer3_toggle_count = toggle_count;
         bitWrite(TIMSK3, OCIE3A, 1);
         break;
       case 4:
         OCR4A = ocr;
-        timer4.toggle_count = toggle_count;
+        timer4_toggle_count = toggle_count;
         bitWrite(TIMSK4, OCIE4A, 1);
         break;
       case 5:
         OCR5A = ocr;
-        timer5.toggle_count = toggle_count;
+        timer5_toggle_count = toggle_count;
         bitWrite(TIMSK5, OCIE5A, 1);
         break;
 #endif
-    }
 
-    digitalWrite(_pin, 0);
-    digitalWrite(_pin_differential, 1);
+    }
   }
 }
 
@@ -353,89 +359,157 @@ void Tone::stop()
   }
 
   digitalWrite(_pin, 0);
-  digitalWrite(_pin_differential, 0);
 }
 
 
 bool Tone::isPlaying(void)
 {
+  bool returnvalue = false;
+  
   switch (_timer)
   {
 #if !defined(__AVR_ATmega8__)
     case 0:
-      return TIMSK0 & (1 << OCIE0A);
+      returnvalue = (TIMSK0 & (1 << OCIE0A));
+      break;
 #endif
 
     case 1:
-      return TIMSK1 & (1 << OCIE1A);
+      returnvalue = (TIMSK1 & (1 << OCIE1A));
+      break;
     case 2:
-      return TIMSK2 & (1 << OCIE2A);
+      returnvalue = (TIMSK2 & (1 << OCIE2A));
+      break;
 
 #if defined(__AVR_ATmega1280__)
     case 3:
-      return TIMSK3 & (1 << OCIE3A);
+      returnvalue = (TIMSK3 & (1 << OCIE3A));
+      break;
     case 4:
-      return TIMSK4 & (1 << OCIE4A);
+      returnvalue = (TIMSK4 & (1 << OCIE4A));
+      break;
     case 5:
-      return TIMSK5 & (1 << OCIE5A);
+      returnvalue = (TIMSK5 & (1 << OCIE5A));
+      break;
 #endif
 
-    default:
-      return false;
   }
+  return returnvalue;
 }
 
-static inline void timer_interrupt_handler(timer_info_t &timer, volatile uint8_t& timer_interrupt_mask, volatile uint8_t interrupt_enable_bit)
-{
-  if (timer.toggle_count != 0)
-  {
-    // toggle the pin
-    *timer.pin_port ^= timer.pin_mask;
-    *timer.pin_differential_port ^= timer.pin_differential_mask;
-
-    if (timer.toggle_count > 0)
-      timer.toggle_count--;
-  }
-  else
-  {
-    timer_interrupt_mask &= ~(1 << interrupt_enable_bit);                 // disable the interrupt
-    *timer.pin_port &= ~(timer.pin_mask);   // keep pin low after stop
-    *timer.pin_differential_port &= ~(timer.pin_differential_mask);   // keep pin low after stop
-  }
-}
 
 #if !defined(__AVR_ATmega8__)
 ISR(TIMER0_COMPA_vect)
 {
-  timer_interrupt_handler(timer0, TIMSK0, OCIE0A);
+  if (timer0_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer0_pin_port ^= timer0_pin_mask;
+
+    if (timer0_toggle_count > 0)
+      timer0_toggle_count--;
+  }
+  else
+  {
+    TIMSK0 &= ~(1 << OCIE0A);                 // disable the interrupt
+    *timer0_pin_port &= ~(timer0_pin_mask);   // keep pin low after stop
+  }
 }
 #endif
 
+
 ISR(TIMER1_COMPA_vect)
 {
-  timer_interrupt_handler(timer1, TIMSK1, OCIE1A);
+  if (timer1_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer1_pin_port ^= timer1_pin_mask;
+
+    if (timer1_toggle_count > 0)
+      timer1_toggle_count--;
+  }
+  else
+  {
+    TIMSK1 &= ~(1 << OCIE1A);                 // disable the interrupt
+    *timer1_pin_port &= ~(timer1_pin_mask);   // keep pin low after stop
+  }
 }
+
 
 ISR(TIMER2_COMPA_vect)
 {
-  timer_interrupt_handler(timer2, TIMSK2, OCIE2A);
+  int32_t temp_toggle_count = timer2_toggle_count;
+
+  if (temp_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer2_pin_port ^= timer2_pin_mask;
+
+    if (temp_toggle_count > 0)
+      temp_toggle_count--;
+  }
+  else
+  {
+    TIMSK2 &= ~(1 << OCIE2A);                 // disable the interrupt
+    *timer2_pin_port &= ~(timer2_pin_mask);   // keep pin low after stop
+  }
+  
+  timer2_toggle_count = temp_toggle_count;
 }
+
+
 
 #if defined(__AVR_ATmega1280__)
 
 ISR(TIMER3_COMPA_vect)
 {
-  timer_interrupt_handler(timer3, TIMSK3, OCIE3A);
+  if (timer3_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer3_pin_port ^= timer3_pin_mask;
+
+    if (timer3_toggle_count > 0)
+      timer3_toggle_count--;
+  }
+  else
+  {
+    TIMSK3 &= ~(1 << OCIE3A);                 // disable the interrupt
+    *timer3_pin_port &= ~(timer3_pin_mask);   // keep pin low after stop
+  }
 }
 
 ISR(TIMER4_COMPA_vect)
 {
-  timer_interrupt_handler(timer4, TIMSK4, OCIE4A);
+  if (timer4_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer4_pin_port ^= timer4_pin_mask;
+
+    if (timer4_toggle_count > 0)
+      timer4_toggle_count--;
+  }
+  else
+  {
+    TIMSK4 &= ~(1 << OCIE4A);                 // disable the interrupt
+    *timer4_pin_port &= ~(timer4_pin_mask);   // keep pin low after stop
+  }
 }
 
 ISR(TIMER5_COMPA_vect)
 {
-  timer_interrupt_handler(timer5, TIMSK5, OCIE5A);
+  if (timer5_toggle_count != 0)
+  {
+    // toggle the pin
+    *timer5_pin_port ^= timer5_pin_mask;
+
+    if (timer5_toggle_count > 0)
+      timer5_toggle_count--;
+  }
+  else
+  {
+    TIMSK5 &= ~(1 << OCIE5A);                 // disable the interrupt
+    *timer5_pin_port &= ~(timer5_pin_mask);   // keep pin low after stop
+  }
 }
 
 #endif
