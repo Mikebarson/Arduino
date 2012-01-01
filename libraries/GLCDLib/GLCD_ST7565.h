@@ -1,3 +1,6 @@
+#ifndef _GLCD_ST7565_H
+#define _GLCD_ST7565_H
+
 // Graphics library for 128x64 display based on ST7565 (JeeLabs Graphics Board)
 //
 // Originally derived from code by cstone@pobox.com and Limor Fried / Adafruit.
@@ -48,3 +51,5 @@ public:
     static void updateDisplayArea(byte x0,byte y0,byte x1,byte y1,byte reset);
     static void setUpdateArea(byte x0,byte y0,byte x1,byte y1, byte allowReduction);    
 };
+
+#endif // _GLCD_ST7565_H
