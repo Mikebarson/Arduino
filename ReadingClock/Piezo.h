@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Tone.h>
-#include "FastPin.h"
 
 class Piezo
 {
@@ -12,5 +11,6 @@ class Piezo
   private:
     Tone _tone;
     int _frequency;
-    FastPin _onOffPin;
+    int _frequencyPin;
+    int _onOffPin;
 };

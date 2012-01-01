@@ -1,13 +1,12 @@
-#include <Arduino.h>
 #include "Piezo.h"
 
 Piezo::Piezo(int frequencyPin, int onOffPin, int frequency)
-  : _onOffPin(onOffPin), _frequency(frequency)
+  : _frequencyPin(frequencyPin), _onOffPin(onOffPin), _frequency(frequency)
 {
-  pinMode(onOffPin, OUTPUT);
-  _onOffPin.DigitalWrite(LOW);
+  pinMode(_onOffPin, OUTPUT);
+  digitalWrite(_onOffPin, LOW);
   
-  _tone.begin(frequencyPin);
+  _tone.begin(_frequencyPin);
 }
 
 void Piezo::SetState(bool on)
@@ -21,5 +20,5 @@ void Piezo::SetState(bool on)
     _tone.stop();
   }
 
-  _onOffPin.DigitalWrite(on ? HIGH : LOW);
+  digitalWrite(_onOffPin, on ? HIGH : LOW);
 }
