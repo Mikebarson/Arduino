@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <RTClib.h>
+#include <Tone.h>
 #include <EEPROM.h>
 
 #include <JeeLib.h>
@@ -7,10 +9,6 @@
 #include <avr/pgmspace.h>
 #include <utility/font_clR6x8.h>
 #include <utility/font_luBS18.h>
-
-#include <RTClib.h>
-
-#include <Tone.h>
 
 #include "Pins.h"
 #include "LCDBacklight.h"
