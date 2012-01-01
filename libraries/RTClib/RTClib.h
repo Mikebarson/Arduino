@@ -1,3 +1,6 @@
+#ifndef _RTCLIB_H
+#define _RTCLIB_H
+
 // Code by JeeLabs http://news.jeelabs.org/code/
 // Released to the public domain! Enjoy!
 
@@ -55,3 +58,5 @@ public:
 protected:
     static long offset;
 };
+
+#endif // _RTCLIB_H
