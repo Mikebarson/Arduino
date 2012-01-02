@@ -5,11 +5,9 @@
 #include "globals.h"
 #include "utils.h"
 
-static int menuState;
+void GoToMenu(int menuLevel);
 
-void SetMenuState(int state);
-
-struct MenuState
+struct MenuLevel
 {
   enum Values
   {
@@ -50,27 +48,27 @@ class RootMenu : public Menu
   public:
     RootMenu()
     {
-      minPosition = MenuState::Timer;
+      minPosition = MenuLevel::Timer;
       numPositions = 3;
       curPosition = minPosition;
     }
     
     virtual void Draw()
     {
-      drawMenuItem(0, "Set Timer", curPosition == MenuState::Timer);
-      drawMenuItem(10, "Set Contrast", curPosition == MenuState::Contrast);
-      drawMenuItem(20, "Set Color", curPosition == MenuState::Color);
+      drawMenuItem(0, "Set Timer", curPosition == MenuLevel::Timer);
+      drawMenuItem(10, "Set Contrast", curPosition == MenuLevel::Contrast);
+      drawMenuItem(20, "Set Color", curPosition == MenuLevel::Color);
     }
     
     virtual void OnEscape()
     {
       currentState = beforeMenuState;
-      curPosition = MenuState::Timer;
+      curPosition = MenuLevel::Timer;
     }
         
     virtual void OnEnter()
     {
-      SetMenuState(curPosition);
+      GoToMenu(curPosition);
     }
 };
 
@@ -107,7 +105,7 @@ class TimerMenu : public Menu
     virtual void OnEscape()
     {
       SaveTimerMinutes(curPosition);
-      SetMenuState(MenuState::Root);
+      GoToMenu(MenuLevel::Root);
     }
   
   private:
@@ -165,7 +163,7 @@ class ContrastMenu : public Menu
     virtual void OnEscape()
     {
       SaveScreenContrast(curPosition);
-      SetMenuState(MenuState::Root);
+      GoToMenu(MenuLevel::Root);
     }
     
   private:
@@ -218,7 +216,7 @@ class ColorMenu : public Menu
     virtual void OnEscape()
     {
       SaveBacklightColor(curPosition);
-      SetMenuState(MenuState::Root);
+      GoToMenu(MenuLevel::Root);
     }
 
   private:
@@ -255,25 +253,23 @@ ContrastMenu contrastMenu;
 ColorMenu colorMenu;
 Menu *currentMenu;
 
-void SetMenuState(int state)
+void GoToMenu(int state)
 {
-  menuState = state;
-
   switch (state)
   {
-    case MenuState::Root:
+    case MenuLevel::Root:
       currentMenu = &rootMenu;
       break;
 
-    case MenuState::Timer:
+    case MenuLevel::Timer:
       currentMenu = &timerMenu;
       break;
 
-    case MenuState::Contrast:
+    case MenuLevel::Contrast:
       currentMenu = &contrastMenu;
       break;
 
-    case MenuState::Color:
+    case MenuLevel::Color:
       currentMenu = &colorMenu;
       break;
   }
@@ -290,7 +286,7 @@ void GoToRootMenu()
 {
   beforeMenuState = currentState;
   currentState = States::menu;
-  SetMenuState(MenuState::Root);
+  GoToMenu(MenuLevel::Root);
 }
 
 void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDelta)
