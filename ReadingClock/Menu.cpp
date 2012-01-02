@@ -6,8 +6,21 @@
 #include "utils.h"
 
 static int menuState;
-static int menuEncoderValue;
-static int currentMenuMax;
+static int currentMenuPosition;
+static int currentMenuMin;
+static int currentMenuNumItems;
+
+struct MenuState
+{
+  enum Values
+  {
+    Root,
+    Timer,
+    Contrast,
+    Color,
+    Clock,
+  };
+};
 
 void SaveTimerMinutes(byte timerMinutes)
 {
@@ -22,24 +35,29 @@ void SaveScreenContrast(byte contrast)
   settings.writeLcdContrast();
 }
 
-void UpdateScreenContrast(byte contrast)
+void SaveBacklightColor(byte colorIndex)
 {
-  settings.lcdContrast = contrast;
-  glcd.setContrast(contrast);
-}
-
-void SaveBacklightColor()
-{
-  Color color = Colors::GetColor(menuEncoderValue);
+  Color color = Colors::GetColor(colorIndex);
   settings.lcdRed = color.red;
   settings.lcdGreen = color.green;
   settings.lcdBlue = color.blue;
   settings.writeLcdColor();
 }
 
-void UpdateBacklightColor()
+void UpdateTimerMinutes(int timerMinutes)
 {
-  Color color = Colors::GetColor(menuEncoderValue);
+  settings.timerMinutes = timerMinutes;
+}
+
+void UpdateScreenContrast(byte contrast)
+{
+  settings.lcdContrast = contrast;
+  glcd.setContrast(contrast);
+}
+
+void UpdateBacklightColor(byte colorIndex)
+{
+  Color color = Colors::GetColor(colorIndex);
   lcdBacklight.SetColor(color.red, color.green, color.blue);
 }
 
@@ -54,9 +72,9 @@ void drawMenuItem(int y, char * text, bool selected)
 
 void DrawRootMenu()
 {
-  drawMenuItem(0, "Set Timer", menuEncoderValue == 0);
-  drawMenuItem(10, "Set Contrast", menuEncoderValue == 1);
-  drawMenuItem(20, "Set Color", menuEncoderValue == 2);
+  drawMenuItem(0, "Set Timer", currentMenuPosition == MenuState::Timer);
+  drawMenuItem(10, "Set Contrast", currentMenuPosition == MenuState::Contrast);
+  drawMenuItem(20, "Set Color", currentMenuPosition == MenuState::Color);
 }
 
 void DrawSetTimerMenu()
@@ -86,7 +104,7 @@ void DrawSetContrastMenu()
 
 void DrawSetBacklightColorMenu()
 {
-  Color color = Colors::GetColor(menuEncoderValue);
+  Color color = Colors::GetColor(currentMenuPosition);
   
   glcd.drawString(0, 0, "Setting Color...");
   glcd.drawString(0, 20, formatString("Color: %s", color.name));
@@ -100,50 +118,53 @@ void SetMenuState(int state)
 
   switch (state)
   {
-    case 0:
-      menuEncoderValue = 0;
-      numItems = 3;
+    case MenuState::Root:
+      currentMenuMin = MenuState::Timer;
+      currentMenuNumItems = 3;
+      currentMenuPosition = currentMenuMin;
       break;
-    case 1:  // Set Timer
-      menuEncoderValue = settings.timerMinutes;
-      numItems = Settings::maxTimerMinutes - Settings::minTimerMinutes + 1;
+
+    case MenuState::Timer:
+      currentMenuMin = Settings::minTimerMinutes;
+      currentMenuNumItems = Settings::maxTimerMinutes - Settings::minTimerMinutes + 1;
+      currentMenuPosition = min(Settings::maxTimerMinutes, max(Settings::minTimerMinutes, settings.timerMinutes));
       break;
-    case 2:  // Set Contrast
+
+    case MenuState::Contrast:
+      currentMenuMin = Settings::minLcdContrast;
+      currentMenuNumItems = Settings::maxLcdContrast - Settings::minLcdContrast + 1;
+      currentMenuPosition = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast));
+      break;
+
+    case MenuState::Color:
+      currentMenuMin = 0;
+      currentMenuNumItems = Colors::NumColors();
+      currentMenuPosition = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
+      if (currentMenuPosition < 0)
       {
-        numItems = Settings::maxLcdContrast - Settings::minLcdContrast + 1;
-        menuEncoderValue = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast)) - Settings::minLcdContrast;
+        currentMenuPosition = 0;
       }
-      break;
-    case 3:  // Set Backlight color
-      menuEncoderValue = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
-      if (menuEncoderValue < 0)
-      {
-        menuEncoderValue = 0;
-      }
-      numItems = Colors::NumColors();
       break;
   }
-  
-  currentMenuMax = numItems - 1;
 }
 
 void DrawMenu()
 {
   switch (menuState)
   {
-    case 0:
+    case MenuState::Root:
       DrawRootMenu();
       break;
       
-    case 1:
+    case MenuState::Timer:
       DrawSetTimerMenu();
       break;
       
-    case 2:
+    case MenuState::Contrast:
       DrawSetContrastMenu();
       break;
       
-    case 3:
+    case MenuState::Color:
       DrawSetBacklightColorMenu();
       break;
   }
@@ -153,16 +174,16 @@ void GoToRootMenu()
 {
   beforeMenuState = currentState;
   currentState = States::menu;
-  SetMenuState(0);
+  SetMenuState(MenuState::Root);
 }
 
 void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDelta)
 {
-  menuEncoderValue = min(currentMenuMax, max(0, menuEncoderValue + encoderDelta));
+  currentMenuPosition = min(currentMenuMin + currentMenuNumItems - 1, max(currentMenuMin, currentMenuPosition + encoderDelta));
   
   switch (menuState)
   {
-    case 0:
+    case MenuState::Root:
       if (alarmButtonDelta > 0)
       {
         currentState = beforeMenuState;
@@ -170,49 +191,48 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
       
       if (encoderButtonDelta > 0)
       {
-        SetMenuState(menuEncoderValue + 1);
+        SetMenuState(currentMenuPosition);
       }
       break;
       
-    case 1:  // Set Timer
+    case MenuState::Timer:
       if (encoderDelta != 0)
       {
-        settings.timerMinutes = menuEncoderValue + 1;
+        UpdateTimerMinutes(currentMenuPosition);
       }
       
       if (alarmButtonDelta > 0)
       {
-        SaveTimerMinutes(menuEncoderValue + 1);
-        SetMenuState(0);
+        SaveTimerMinutes(currentMenuPosition);
+        SetMenuState(MenuState::Root);
       }
       break;
       
-    case 2: // Set Contrast
+    case MenuState::Contrast:
       if (encoderDelta != 0)
       {
-        UpdateScreenContrast(menuEncoderValue + Settings::minLcdContrast);
+        UpdateScreenContrast(currentMenuPosition);
       }
       
       if (alarmButtonDelta > 0)
       {
-        SaveScreenContrast(menuEncoderValue + Settings::minLcdContrast);
-        SetMenuState(0);
+        SaveScreenContrast(currentMenuPosition);
+        SetMenuState(MenuState::Root);
       }
       break;
       
-    case 3:  // Set Backlight color
+    case MenuState::Color:
       if (encoderDelta != 0)
       {
-        UpdateBacklightColor();
+        UpdateBacklightColor(currentMenuPosition);
       }
       
       if (alarmButtonDelta > 0)
       {
-        SaveBacklightColor();
-        SetMenuState(0);
+        SaveBacklightColor(currentMenuPosition);
+        SetMenuState(MenuState::Root);
       }
       break;
   }
 }
-
 
