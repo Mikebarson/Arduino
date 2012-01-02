@@ -6,9 +6,8 @@
 #include "utils.h"
 
 static int menuState;
-static int currentMenuPosition;
-static int currentMenuMin;
-static int currentMenuNumItems;
+
+void SetMenuState(int state);
 
 struct MenuState
 {
@@ -22,152 +21,269 @@ struct MenuState
   };
 };
 
-void SaveTimerMinutes(byte timerMinutes)
+class Menu
 {
-  settings.timerMinutes = timerMinutes;
-  settings.writeTimerMinutes();
-  timer.SetTimespan(timerMinutes * 60);
-}
+  public:
+    int minPosition;
+    int numPositions;
+    int curPosition;
 
-void SaveScreenContrast(byte contrast)
-{
-  settings.lcdContrast = contrast;
-  settings.writeLcdContrast();
-}
+    virtual void Activate() {};
+    virtual void OnEscape() {};
+    virtual void OnEnter() {};
+    virtual void OnScroll() {};
+    virtual void Draw() = 0;
+    
+  protected:
+    void drawMenuItem(int y, char * text, bool selected)
+    {
+      int x = glcd.drawString(7, y, text);
+      if (selected)
+      {
+        glcd.fillTriangle(2, y, 2, y + 6, 5, y + 3, WHITE);
+      }
+    }
+};
 
-void SaveBacklightColor(byte colorIndex)
+class RootMenu : public Menu
 {
-  Color color = Colors::GetColor(colorIndex);
-  settings.lcdRed = color.red;
-  settings.lcdGreen = color.green;
-  settings.lcdBlue = color.blue;
-  settings.writeLcdColor();
-}
+  public:
+    RootMenu()
+    {
+      minPosition = MenuState::Timer;
+      numPositions = 3;
+      curPosition = minPosition;
+    }
+    
+    virtual void Draw()
+    {
+      drawMenuItem(0, "Set Timer", curPosition == MenuState::Timer);
+      drawMenuItem(10, "Set Contrast", curPosition == MenuState::Contrast);
+      drawMenuItem(20, "Set Color", curPosition == MenuState::Color);
+    }
+    
+    virtual void OnEscape()
+    {
+      currentState = beforeMenuState;
+      curPosition = MenuState::Timer;
+    }
+        
+    virtual void OnEnter()
+    {
+      SetMenuState(curPosition);
+    }
+};
 
-void UpdateTimerMinutes(int timerMinutes)
+class TimerMenu : public Menu
 {
-  settings.timerMinutes = timerMinutes;
-}
-
-void UpdateScreenContrast(byte contrast)
-{
-  settings.lcdContrast = contrast;
-  glcd.setContrast(contrast);
-}
-
-void UpdateBacklightColor(byte colorIndex)
-{
-  Color color = Colors::GetColor(colorIndex);
-  lcdBacklight.SetColor(color.red, color.green, color.blue);
-}
-
-void drawMenuItem(int y, char * text, bool selected)
-{
-  int x = glcd.drawString(7, y, text);
-  if (selected)
-  {
-    glcd.fillTriangle(2, y, 2, y + 6, 5, y + 3, WHITE);
-  }
-}
-
-void DrawRootMenu()
-{
-  drawMenuItem(0, "Set Timer", currentMenuPosition == MenuState::Timer);
-  drawMenuItem(10, "Set Contrast", currentMenuPosition == MenuState::Contrast);
-  drawMenuItem(20, "Set Color", currentMenuPosition == MenuState::Color);
-}
-
-void DrawSetTimerMenu()
-{
-  glcd.drawString(0, 0, "Setting Timer...");
-  int x = glcd.drawString(0, 20, formatString("%d", settings.timerMinutes));
-  if (RTC.now().second() % 2 == 0)
-  {
-    glcd.drawLine(0, 30, x, 30, WHITE);
-  }
+  public:
+    TimerMenu()
+    {
+      ResetValues();
+    }
+    
+    virtual void Activate()
+    {
+      ResetValues();
+    }
+    
+    virtual void Draw()
+    {
+      glcd.drawString(0, 0, "Setting Timer...");
+      int x = glcd.drawString(0, 20, formatString("%d", settings.timerMinutes));
+      if (RTC.now().second() % 2 == 0)
+      {
+        glcd.drawLine(0, 30, x, 30, WHITE);
+      }
+      
+      glcd.drawString(x, 20, " minutes");
+    }
+    
+    virtual void OnScroll()
+    {
+      UpdateTimerMinutes(curPosition);
+    }
   
-  glcd.drawString(x, 20, " minutes");
-}
+    virtual void OnEscape()
+    {
+      SaveTimerMinutes(curPosition);
+      SetMenuState(MenuState::Root);
+    }
+  
+  private:
+    void UpdateTimerMinutes(int timerMinutes)
+    {
+      settings.timerMinutes = timerMinutes;
+    }
+    
+    void SaveTimerMinutes(byte timerMinutes)
+    {
+      settings.timerMinutes = timerMinutes;
+      settings.writeTimerMinutes();
+      timer.SetTimespan(timerMinutes * 60);
+    }
+    
+    void ResetValues()
+    {
+      minPosition = Settings::minTimerMinutes;
+      numPositions = Settings::maxTimerMinutes - Settings::minTimerMinutes + 1;
+      curPosition = min(Settings::maxTimerMinutes, max(Settings::minTimerMinutes, settings.timerMinutes));
+    }    
+};
 
-void DrawSetContrastMenu()
+class ContrastMenu : public Menu
 {
-  static const int barWidth = 118;
-  static const int barHeight = 10;
-  
-  float percentage = (float)(settings.lcdContrast - Settings::minLcdContrast) / (Settings::maxLcdContrast - Settings::minLcdContrast);
-  int fillWidth = percentage * barWidth;
-  
-  glcd.drawString(0, 0, "Adjusting Contrast...");
-  glcd.drawRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, barWidth, barHeight, WHITE);
-  glcd.fillRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, fillWidth, barHeight, WHITE);
-}
+  public:
+    ContrastMenu()
+    {
+      ResetValues();
+    }
+    
+    virtual void Activate()
+    {
+      ResetValues();
+    }
+    
+    virtual void Draw()
+    {
+      static const int barWidth = 118;
+      static const int barHeight = 10;
+      
+      float percentage = (float)(settings.lcdContrast - Settings::minLcdContrast) / (Settings::maxLcdContrast - Settings::minLcdContrast);
+      int fillWidth = percentage * barWidth;
+      
+      glcd.drawString(0, 0, "Adjusting Contrast...");
+      glcd.drawRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, barWidth, barHeight, WHITE);
+      glcd.fillRect((LCDWIDTH - barWidth) / 2, (LCDHEIGHT - barHeight) / 2, fillWidth, barHeight, WHITE);
+    }
+    
+    virtual void OnScroll()
+    {
+      UpdateScreenContrast(curPosition);
+    }
 
-void DrawSetBacklightColorMenu()
+    virtual void OnEscape()
+    {
+      SaveScreenContrast(curPosition);
+      SetMenuState(MenuState::Root);
+    }
+    
+  private:
+    void ResetValues()
+    {
+      minPosition = Settings::minLcdContrast;
+      numPositions = Settings::maxLcdContrast - Settings::minLcdContrast + 1;
+      curPosition = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast));
+    }
+    
+    void UpdateScreenContrast(byte contrast)
+    {
+      settings.lcdContrast = contrast;
+      glcd.setContrast(contrast);
+    }
+
+    void SaveScreenContrast(byte contrast)
+    {
+      settings.lcdContrast = contrast;
+      settings.writeLcdContrast();
+    }
+};
+
+class ColorMenu : public Menu
 {
-  Color color = Colors::GetColor(currentMenuPosition);
-  
-  glcd.drawString(0, 0, "Setting Color...");
-  glcd.drawString(0, 20, formatString("Color: %s", color.name));
-}
+  public:
+    ColorMenu()
+    {
+      ResetValues();
+    }
+    
+    virtual void Activate()
+    {
+      ResetValues();
+    }
+    
+    virtual void Draw()
+    {
+      Color color = Colors::GetColor(curPosition);
+      
+      glcd.drawString(0, 0, "Setting Color...");
+      glcd.drawString(0, 20, formatString("Color: %s", color.name));
+    }
+    
+    virtual void OnScroll()
+    {
+      UpdateBacklightColor(curPosition);
+    }
+
+    virtual void OnEscape()
+    {
+      SaveBacklightColor(curPosition);
+      SetMenuState(MenuState::Root);
+    }
+
+  private:
+    void ResetValues()
+    {
+      minPosition = 0;
+      numPositions = Colors::NumColors();
+      curPosition = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
+      if (curPosition < 0)
+      {
+        curPosition = 0;
+      }
+    }
+    
+    void UpdateBacklightColor(byte colorIndex)
+    {
+      Color color = Colors::GetColor(colorIndex);
+      lcdBacklight.SetColor(color.red, color.green, color.blue);
+    }
+
+    void SaveBacklightColor(byte colorIndex)
+    {
+      Color color = Colors::GetColor(colorIndex);
+      settings.lcdRed = color.red;
+      settings.lcdGreen = color.green;
+      settings.lcdBlue = color.blue;
+      settings.writeLcdColor();
+    }
+};
+
+RootMenu rootMenu;
+TimerMenu timerMenu;
+ContrastMenu contrastMenu;
+ColorMenu colorMenu;
+Menu *currentMenu;
 
 void SetMenuState(int state)
 {
   menuState = state;
-  
-  int numItems;
 
   switch (state)
   {
     case MenuState::Root:
-      currentMenuMin = MenuState::Timer;
-      currentMenuNumItems = 3;
-      currentMenuPosition = currentMenuMin;
+      currentMenu = &rootMenu;
       break;
 
     case MenuState::Timer:
-      currentMenuMin = Settings::minTimerMinutes;
-      currentMenuNumItems = Settings::maxTimerMinutes - Settings::minTimerMinutes + 1;
-      currentMenuPosition = min(Settings::maxTimerMinutes, max(Settings::minTimerMinutes, settings.timerMinutes));
+      currentMenu = &timerMenu;
       break;
 
     case MenuState::Contrast:
-      currentMenuMin = Settings::minLcdContrast;
-      currentMenuNumItems = Settings::maxLcdContrast - Settings::minLcdContrast + 1;
-      currentMenuPosition = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast));
+      currentMenu = &contrastMenu;
       break;
 
     case MenuState::Color:
-      currentMenuMin = 0;
-      currentMenuNumItems = Colors::NumColors();
-      currentMenuPosition = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
-      if (currentMenuPosition < 0)
-      {
-        currentMenuPosition = 0;
-      }
+      currentMenu = &colorMenu;
       break;
   }
+
+  currentMenu->Activate();
 }
 
 void DrawMenu()
 {
-  switch (menuState)
-  {
-    case MenuState::Root:
-      DrawRootMenu();
-      break;
-      
-    case MenuState::Timer:
-      DrawSetTimerMenu();
-      break;
-      
-    case MenuState::Contrast:
-      DrawSetContrastMenu();
-      break;
-      
-    case MenuState::Color:
-      DrawSetBacklightColorMenu();
-      break;
-  }
+  currentMenu->Draw();
 }
 
 void GoToRootMenu()
@@ -179,60 +295,21 @@ void GoToRootMenu()
 
 void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDelta)
 {
-  currentMenuPosition = min(currentMenuMin + currentMenuNumItems - 1, max(currentMenuMin, currentMenuPosition + encoderDelta));
-  
-  switch (menuState)
+  currentMenu->curPosition = min(currentMenu->minPosition + currentMenu->numPositions - 1, max(currentMenu->minPosition, currentMenu->curPosition + encoderDelta));
+
+  if (alarmButtonDelta > 0)
   {
-    case MenuState::Root:
-      if (alarmButtonDelta > 0)
-      {
-        currentState = beforeMenuState;
-      }
-      
-      if (encoderButtonDelta > 0)
-      {
-        SetMenuState(currentMenuPosition);
-      }
-      break;
-      
-    case MenuState::Timer:
-      if (encoderDelta != 0)
-      {
-        UpdateTimerMinutes(currentMenuPosition);
-      }
-      
-      if (alarmButtonDelta > 0)
-      {
-        SaveTimerMinutes(currentMenuPosition);
-        SetMenuState(MenuState::Root);
-      }
-      break;
-      
-    case MenuState::Contrast:
-      if (encoderDelta != 0)
-      {
-        UpdateScreenContrast(currentMenuPosition);
-      }
-      
-      if (alarmButtonDelta > 0)
-      {
-        SaveScreenContrast(currentMenuPosition);
-        SetMenuState(MenuState::Root);
-      }
-      break;
-      
-    case MenuState::Color:
-      if (encoderDelta != 0)
-      {
-        UpdateBacklightColor(currentMenuPosition);
-      }
-      
-      if (alarmButtonDelta > 0)
-      {
-        SaveBacklightColor(currentMenuPosition);
-        SetMenuState(MenuState::Root);
-      }
-      break;
+    currentMenu->OnEscape();
+  }
+
+  if (encoderButtonDelta > 0)
+  {
+    currentMenu->OnEnter();
+  }
+
+  if (encoderDelta != 0)
+  {
+    currentMenu->OnScroll();
   }
 }
 
