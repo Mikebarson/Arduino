@@ -40,6 +40,10 @@ public:
     static void drawRect   (byte x , byte y   , byte w , byte h , byte color);
     static void fillRect   (byte x , byte y   , byte w , byte h , byte color);
     static void drawLine   (byte x0, byte y0  , byte x1, byte y1, byte color);
+    static byte textHeight();
+    static byte measureChar(char c);
+    static byte measureString(const char *c);
+    static byte measureString_P(const char *c);
     static byte drawChar   (byte x , byte y, char c);
     static byte drawString (byte x , byte y, const char *c);
     static byte drawString_P (byte x, byte y, const char *c);

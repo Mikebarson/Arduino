@@ -238,7 +238,7 @@ byte GLCD_ST7565::setFont (const byte* font) {
     return fontInfo.width;
 }
 
-byte GLCD_ST7565::drawChar(byte x, byte y, char c) {
+static byte drawChar_Core(byte x, byte y, char c, void (*drawFont)(word x, byte w, const byte* bits, byte xo, byte yo)) {
     const struct FontInfo& fi = fontInfo;
     if (c >= fi.first) {
         c -= fi.first;
@@ -266,11 +266,47 @@ byte GLCD_ST7565::drawChar(byte x, byte y, char c) {
                 pos = c * pix; // mono-spaced fonts
             char pre = (gaps & 0x0F) - 4;
             char post = (gaps >> 4) - 4;
-            myDrawFont(pos, pix, fi.image, x + pre, y);
+            drawFont(pos, pix, fi.image, x + pre, y);
             return pix + post;
         }
     }
     return 0;
+}
+
+byte GLCD_ST7565::drawChar(byte x, byte y, char c) {
+    return drawChar_Core(x, y, c, myDrawFont);
+}
+
+static void nullDrawFont(word x, byte w, const byte* bits, byte xo, byte yo) {
+}
+
+byte GLCD_ST7565::textHeight() {
+    return fontInfo.height;
+}
+
+byte GLCD_ST7565::measureChar(char c) {
+    return drawChar_Core(0, 0, c, nullDrawFont);
+}
+
+byte GLCD_ST7565::measureString(const char *c) {
+    byte x = 0;
+    while (*c) {
+        x += measureChar(*c++);
+    }
+
+    return x;
+}
+
+byte GLCD_ST7565::measureString_P(const char *c) {
+    byte x = 0;
+    for (;;) {
+        char ch = pgm_read_byte(c++);
+        if (ch == 0)
+            break;
+        x += measureChar(ch);
+    }
+
+    return x;
 }
 
 byte GLCD_ST7565::drawString(byte x, byte y, const char *c) {
