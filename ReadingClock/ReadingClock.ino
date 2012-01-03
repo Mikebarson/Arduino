@@ -60,13 +60,12 @@ void loop()
 
 void DrawDebuggingScreen(int timeDeltaMillis)
 {
-  glcd.drawString(0, 0, toString(encoderCountRaw));
-  glcd.drawString(0, 10, toString(encoderButtonPressCount));
-  glcd.drawString(0, 20, toString(alarmButtonPressCount));
-  glcd.drawString(0, 30, toString(timeDeltaMillis));
-  glcd.drawString(0, 40, toString(freeRam()));
-  glcd.drawString_P(0, 50, PSTR("Elapsed Time: "));
-  glcd.drawString(84, 50, toString(timer.GetElapsedSeconds()));
+  glcd.drawString(0, 0, formatString_P(PSTR("Encoder: %0.2d"), encoderCountRaw));
+  glcd.drawString(0, 10, formatString_P(PSTR("Encoder Button: %0.2d"), encoderButtonPressCount));
+  glcd.drawString(0, 20, formatString_P(PSTR("Alarm Button: %0.2d"), alarmButtonPressCount));
+  glcd.drawString(0, 30, formatString_P(PSTR("Time Delta:"), timeDeltaMillis));
+  glcd.drawString(0, 40, formatString_P(PSTR("Free RAM: %d"), freeRam()));
+  glcd.drawString(0, 50, formatString_P(PSTR("Elapsed Time: %d"), timer.GetElapsedSeconds()));
 }
 
 void DrawHomeScreen()
