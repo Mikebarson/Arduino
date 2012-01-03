@@ -213,7 +213,7 @@ class ColorMenu : public Menu
       Color color = Colors::GetColor(curPosition);
       
       glcd.drawString_P(0, 0, PSTR("Setting Color..."));
-      int x = glcd.drawString_P(0, 20, PSTR("Color: %s"));
+      int x = glcd.drawString_P(0, 20, PSTR("Color: "));
       glcd.drawString_P(x, 20, color.name);
     }
     
