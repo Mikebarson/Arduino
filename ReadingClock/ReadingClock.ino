@@ -47,14 +47,20 @@ void loop()
   updateCurrentState();
   
   glcd.clear();
-    
-  if (currentState == States::menu)
+  
+  switch (currentState)
   {
-    DrawMenu();
-  }
-  else
-  {
-    DrawHomeScreen();
+    case States::sleeping:
+      DrawSleepingScreen();
+      break;
+      
+    case States::menu:
+      DrawMenu();
+      break;
+      
+    default:
+      DrawHomeScreen();
+      break;
   }
 
   glcd.refresh();
@@ -76,6 +82,14 @@ void DrawDebuggingScreen(int timeDeltaMillis)
   glcd.drawString(0, 30, formatString_P(PSTR("Time Delta:"), timeDeltaMillis));
   glcd.drawString(0, 40, formatString_P(PSTR("Free RAM: %d"), freeRam()));
   glcd.drawString(0, 50, formatString_P(PSTR("Elapsed Time: %d"), timer.GetElapsedSeconds()));
+}
+
+void DrawSleepingScreen()
+{
+  PGM_P sleepingText = PSTR("ZZZZZ.....");
+  
+  Fonts::SelectFont(Fonts::Small);
+  int width = glcd.measureString_P(sleepingText);
 }
 
 void DrawHomeScreen()
@@ -153,6 +167,7 @@ void updateCurrentState()
   switch (currentState)
   {
     case States::sleeping:
+      // As soon as we wake up from sleeping, enter idle mode.
       GoToState(States::idle);
       break;
       
