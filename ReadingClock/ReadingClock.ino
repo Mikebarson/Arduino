@@ -52,6 +52,7 @@ void loop()
   }
   else
   {
+    //DrawDebuggingScreen(timeDeltaMillis);
     DrawHomeScreen();
   }
 
@@ -64,25 +65,25 @@ void DrawDebuggingScreen(int timeDeltaMillis)
   glcd.drawString(0, 10, toString(encoderButtonPressCount));
   glcd.drawString(0, 20, toString(alarmButtonPressCount));
   glcd.drawString(0, 30, toString(timeDeltaMillis));
-  glcd.drawString(0, 40, toString(squareCount));
-  glcd.drawString(0, 50, "Elapsed Time: ");
+  glcd.drawString(0, 40, toString(freeRam()));
+  glcd.drawString_P(0, 50, PSTR("Elapsed Time: "));
   glcd.drawString(84, 50, toString(timer.GetElapsedSeconds()));
 }
 
 void DrawHomeScreen()
 {
-    char * line;
+    const char * line;
     
     DateTime now = RTC.now();
     int hour = now.hour();
     bool pm = hour > 11;
     hour %= 12;
 
-    line = formatString("Time: %d:%0.2d:%0.2d %s",
+    line = formatString_P(PSTR("Time: %d:%0.2d:%0.2d %s"),
       hour == 0 ? 12 : hour,
       now.minute(),
       now.second(),
-      pm ? " PM" : " AM");
+      pm ? "PM" : "AM");
     glcd.drawString(0, 0, line);
     
     if (currentState == States::timerPaused)
@@ -90,18 +91,20 @@ void DrawHomeScreen()
       // Flash the "paused" text
       if (now.second() % 2 == 0)
       {
-        glcd.drawString(0, 20, "Timer Paused");
+        glcd.drawString_P(0, 20, PSTR("Timer Paused"));
       }
     }
     
     long secondsElapsed = timer.GetElapsedSeconds();
     
-    line = formatString("%0.2ld:%0.2ld elapsed", secondsElapsed / 60, secondsElapsed % 60);
+    line = formatString_P(PSTR("%0.2ld:%0.2ld elapsed"), secondsElapsed / 60, secondsElapsed % 60);
     glcd.drawString(0, 30, line);
     
     long secondsRemaining = timer.GetTimespan() - secondsElapsed;
-    line = formatString("%0.2ld:%0.2ld remaining", secondsRemaining / 60, secondsRemaining % 60);
+    line = formatString_P(PSTR("%0.2ld:%0.2ld remaining"), secondsRemaining / 60, secondsRemaining % 60);
     glcd.drawString(0, 40, line);
+    
+    glcd.drawString(0, 50, toString(freeRam()));
 }
 
 void configureInterrupts()

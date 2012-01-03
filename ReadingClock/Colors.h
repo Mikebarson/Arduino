@@ -5,10 +5,10 @@ class Color
 {
   public:
     Color();
-    Color(byte red, byte green, byte blue, const char * name);
+    Color(byte red, byte green, byte blue, PGM_P name);
     
     byte red, green, blue;
-    const char * name;
+    PGM_P name;
 };
 
 class Colors

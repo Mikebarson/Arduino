@@ -36,8 +36,8 @@ void LCDBacklight::Disable()
 
 void LCDBacklight::WriteToDevice(byte red, byte green, byte blue)
 {
-    analogWrite(redPin, 255 - red);
-    analogWrite(greenPin, 255 - green);
-    analogWrite(bluePin, 255 - blue);
+  analogWrite(redPin, 255 - red);
+  analogWrite(greenPin, 255 - green);
+  analogWrite(bluePin, 255 - blue);
 }
 

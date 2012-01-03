@@ -1,22 +1,59 @@
 #include <Arduino.h>
 #include "Colors.h"
 
+// This rigamarole is necessary to get the color name strings int program storage rather than RAM.
+class ColorNames
+{
+  public:
+    enum Names
+    {
+      White,
+      Red,
+      Yellow,
+      Green,
+      Cyan,
+      Blue,
+      Purple,
+    };
+
+    static PGM_P GetName(int colorName)
+    {
+      switch (colorName)
+      {
+        case White:
+          return PSTR("White");
+        case Red:
+          return PSTR("Red");
+        case Yellow:
+          return PSTR("Yellow");
+        case Green:
+          return PSTR("Green");
+        case Cyan:
+          return PSTR("Cyan");
+        case Blue:
+          return PSTR("Blue");
+        case Purple:
+          return PSTR("Purple");
+      }
+    }
+};
+
 Color::Color() { }
 
-Color::Color(byte red, byte green, byte blue, const char *name)
+Color::Color(byte red, byte green, byte blue, PGM_P name)
   : red(red), green(green), blue(blue), name(name)
 {
 }
 
-static Color allColors[] =
+static const Color allColors[] =
 {
-  Color(0xFF, 0xFF, 0xFF, "White"),
-  Color(0xFF, 0, 0, "Red"),
-  Color(0xFF, 0xFF, 0, "Yellow"),
-  Color(0, 0xFF, 0, "Green"),
-  Color(0, 0xFF, 0xFF, "Cyan"),
-  Color(0, 0, 0xFF, "Blue"),
-  Color(0xFF, 0, 0xFF, "Purple"),
+  Color(0xFF, 0xFF, 0xFF, ColorNames::GetName(ColorNames::White)),
+  Color(0xFF, 0, 0, ColorNames::GetName(ColorNames::Red)),
+  Color(0xFF, 0xFF, 0, ColorNames::GetName(ColorNames::Yellow)),
+  Color(0, 0xFF, 0, ColorNames::GetName(ColorNames::Green)),
+  Color(0, 0xFF, 0xFF, ColorNames::GetName(ColorNames::Cyan)),
+  Color(0, 0, 0xFF, ColorNames::GetName(ColorNames::Blue)),
+  Color(0xFF, 0, 0xFF, ColorNames::GetName(ColorNames::Purple)),
 };
 
 int Colors::NumColors()
