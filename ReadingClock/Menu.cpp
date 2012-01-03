@@ -17,6 +17,7 @@ struct MenuLevel
     Contrast,
     Color,
     Clock,
+    About,
   };
 };
 
@@ -25,8 +26,8 @@ class Menu
   public:
     int curPosition;
     
-    virtual int MinPosition() = 0;
-    virtual int NumPositions() = 0;
+    virtual int MinPosition() { return 0; }
+    virtual int NumPositions() { return 0; }
     
     virtual void Activate() {};
     virtual void OnEscape() {};
@@ -44,7 +45,7 @@ class RootMenu : public Menu
     }
     
     virtual int MinPosition() { return MenuLevel::Timer; }
-    virtual int NumPositions() { return 4; }
+    virtual int NumPositions() { return 5; }
     
     virtual void Draw()
     {
@@ -52,6 +53,7 @@ class RootMenu : public Menu
       drawMenuItem(10, PSTR("Screen Contrast"), curPosition == MenuLevel::Contrast);
       drawMenuItem(20, PSTR("Screen Color"), curPosition == MenuLevel::Color);
       drawMenuItem(30, PSTR("Adjust Clock"), curPosition == MenuLevel::Clock);
+      drawMenuItem(40, PSTR("About"), curPosition == MenuLevel::About);
     }
     
     virtual void OnEscape()
@@ -268,9 +270,6 @@ class ClockMenu : public Menu
     int editing;
 
   public:
-    virtual int MinPosition() { return 0; }
-    virtual int NumPositions() { return 60; }  // Irrelevant, since we handle the scroll increments directly.
-
     virtual void Draw()
     {
       glcd.drawString_P(0, 0, PSTR("Adjusting clock..."));
@@ -366,11 +365,24 @@ class ClockMenu : public Menu
     }
 };
 
-RootMenu rootMenu;
+class AboutMenu : public Menu
+{
+  public:
+    virtual void Draw()
+    {
+      glcd.drawString_P(0, 0, PSTR("About..."));
+      glcd.drawString_P(0, 20, PSTR("Firmware timestamp:"));
+      glcd.drawString(0, 30, __DATE__);
+      glcd.drawString(0, 40, __TIME__);
+    }
+};
+
+sRootMenu rootMenu;
 TimerMenu timerMenu;
 ContrastMenu contrastMenu;
 ColorMenu colorMenu;
 ClockMenu clockMenu;
+AboutMenu aboutMenu;
 Menu *currentMenu;
 
 void GoToMenu(int state)
@@ -395,6 +407,10 @@ void GoToMenu(int state)
 
     case MenuLevel::Clock:
       currentMenu = &clockMenu;
+      break;
+      
+    case MenuLevel::About:
+      currentMenu = &aboutMenu;
       break;
   }
 

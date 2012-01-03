@@ -15,6 +15,7 @@
 
 static Alarm alarm(&UpdateAlarmOutputs);
 static int currentState;
+static int beforeSleepingState;
 static int beforeMenuState;
 static volatile int lastInputPulseCount;
 
@@ -62,7 +63,12 @@ void loop()
       DrawHomeScreen();
       break;
   }
-
+  
+  if (SHOW_FREE_RAM)
+  {
+    DrawFreeRam();
+  }
+  
   glcd.refresh();
   
   // We don't go to sleep while the alarm is sounding because we need
@@ -73,6 +79,14 @@ void loop()
   }
 }
 
+void DrawFreeRam()
+{
+  Fonts::SelectFont(Fonts::Small);
+  const char *line = formatString_P(PSTR("%d bytes free"), freeRam());
+  int textWidth = glcd.measureString(line);
+  glcd.drawString(LCDWIDTH - textWidth - 1, LCDHEIGHT - glcd.textHeight() - 1, line);
+}
+
 void DrawDebuggingScreen(int timeDeltaMillis)
 {
   Fonts::SelectFont(Fonts::Regular);
@@ -80,8 +94,7 @@ void DrawDebuggingScreen(int timeDeltaMillis)
   glcd.drawString(0, 10, formatString_P(PSTR("Encoder Button: %0.2d"), encoderButtonPressCount));
   glcd.drawString(0, 20, formatString_P(PSTR("Alarm Button: %0.2d"), alarmButtonPressCount));
   glcd.drawString(0, 30, formatString_P(PSTR("Time Delta:"), timeDeltaMillis));
-  glcd.drawString(0, 40, formatString_P(PSTR("Free RAM: %d"), freeRam()));
-  glcd.drawString(0, 50, formatString_P(PSTR("Elapsed Time: %d"), timer.GetElapsedSeconds()));
+  glcd.drawString(0, 40, formatString_P(PSTR("Elapsed Time: %d"), timer.GetElapsedSeconds()));
 }
 
 void DrawSleepingScreen()
@@ -134,11 +147,6 @@ void DrawHomeScreen()
   int secondsRemaining = max(0, timer.GetTimespan() - secondsElapsed);
   line = formatString_P(PSTR("%0.2d:%0.2d remaining"), secondsRemaining / 60, secondsRemaining % 60);
   glcd.drawString(0, 40, line);
-
-  Fonts::SelectFont(Fonts::Small);
-  line = formatString_P(PSTR("%d bytes free"), freeRam());
-  textWidth = glcd.measureString(line);
-  glcd.drawString(LCDWIDTH - textWidth - 1, LCDHEIGHT - glcd.textHeight() - 1, line);
 }
 
 void configureInterrupts()
@@ -173,9 +181,9 @@ void updateCurrentState()
   {
     case States::sleeping:
       // As soon as we wake up from sleeping, enter idle mode.
-      GoToState(States::idle);
+      GoToState(beforeSleepingState);
       break;
-      
+
     case States::idle:
       if (alarmButtonDelta > 0)
       {
@@ -187,20 +195,15 @@ void updateCurrentState()
       {
         GoToState(States::menu);
       }
-      
-      if ((pulseCount - lastInputPulseCount) > (Settings::autoSleepDelaySeconds * PULSES_PER_SECOND))
-      {
-        GoToState(States::sleeping);
-      }
       break;
-      
+
     case States::timerRunning:
       {
         if (timer.IsExpired())
         {
           GoToState(States::timerAlarmSounding);
         }
-        
+
         if (alarmButtonDelta > 0)
         {
           GoToState(States::timerPaused);
@@ -242,6 +245,21 @@ void updateCurrentState()
       }
       break;
   }
+  
+  EnterSleepModeIfAppropriate();
+}
+
+void EnterSleepModeIfAppropriate()
+{
+  if (currentState == States::idle ||
+      currentState == States::timerPaused ||
+      currentState == States::menu)
+  {
+    if ((pulseCount - lastInputPulseCount) > (Settings::autoSleepDelaySeconds * PULSES_PER_SECOND))
+    {
+      GoToState(States::sleeping);
+    }
+  }
 }
 
 void GoToState(int state)
@@ -249,6 +267,7 @@ void GoToState(int state)
   switch (state)
   {
     case States::sleeping:
+      beforeSleepingState = currentState;
       controlRTCSquareWave(false);
       break;
       

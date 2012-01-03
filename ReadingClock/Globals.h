@@ -27,6 +27,8 @@ class States
 #define PULSES_PER_SECOND 2
 #define MILLIS_PER_PULSE 500L
 
+#define SHOW_FREE_RAM false
+
 extern GLCD_ST7565 glcd;
 extern RTC_DS1307 RTC;
 
