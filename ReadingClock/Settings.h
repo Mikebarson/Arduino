@@ -24,3 +24,4 @@ class Settings
 };
 
 #endif // _settings_h
+

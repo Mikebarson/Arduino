@@ -20,3 +20,4 @@ class Colors
 };
 
 #endif // _colors_h
+

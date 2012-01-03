@@ -22,3 +22,4 @@ void Piezo::SetState(bool on)
 
   digitalWrite(_onOffPin, on ? HIGH : LOW);
 }
+

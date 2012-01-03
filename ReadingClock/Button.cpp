@@ -15,3 +15,4 @@ bool Button::WasPressed()
   lastState = state;
   return wasPressed;
 }
+

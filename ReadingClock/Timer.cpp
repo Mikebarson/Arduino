@@ -50,4 +50,3 @@ bool Timer::IsExpired()
   return elapsedMilliseconds > timespanMilliseconds;
 }
 
-

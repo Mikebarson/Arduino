@@ -22,3 +22,4 @@ void Led::SetState(bool on)
 {
   digitalWrite(_pin, on ? HIGH : LOW);
 }
+

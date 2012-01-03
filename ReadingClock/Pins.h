@@ -1,21 +1,6 @@
 #ifndef _pins_h
 #define _pins_h
 
-/* Wire colors
-BacklightBlue - Blue
-BacklightGreen - Green
-BacklightRed - Red
-lcdSID - Orange
-lcdSCLK - Yellow
-lcdA0 - Gray
-lcdRST - Purple
-lcdCS - White (straight to ground)
-SquareWave - Purple
-AlarmFlash - White
-PiezoFreq - Yellow
-PiezoEnable - Green
-*/
-
 class Pins
 {
   public:
@@ -43,3 +28,4 @@ class Pins
 };
 
 #endif _pins_h
+

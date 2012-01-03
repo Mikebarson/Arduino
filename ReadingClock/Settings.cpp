@@ -62,4 +62,3 @@ void Settings::writeLcdColor()
   EEPROM.write(EEPROMAddresses::lcdBlue, lcdBlue);
 }
 
-
