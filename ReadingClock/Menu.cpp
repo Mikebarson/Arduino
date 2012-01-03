@@ -56,7 +56,6 @@ class RootMenu : public Menu
     
     virtual void OnEscape()
     {
-      currentState = beforeMenuState;
       curPosition = MinPosition();
     }
         
@@ -96,9 +95,10 @@ class TimerMenu : public Menu
     {
       glcd.drawString_P(0, 0, PSTR("Setting Timer..."));
       int x = glcd.drawString(0, 20, formatString_P(PSTR("%d"), settings.timerMinutes));
-      if (RTC.now().second() % 2 == 0)
+      if (pulseCount % 2 == 0)
       {
-        glcd.drawLine(0, 30, x, 30, WHITE);
+        int lineY = 20 + glcd.textHeight();
+        glcd.drawLine(0, lineY, x, lineY, WHITE);
       }
       
       glcd.drawString_P(x, 20, PSTR(" minutes"));
@@ -112,7 +112,6 @@ class TimerMenu : public Menu
     virtual void OnEscape()
     {
       SaveTimerMinutes(curPosition);
-      GoToMenu(MenuLevel::Root);
     }
   
   private:
@@ -171,7 +170,6 @@ class ContrastMenu : public Menu
     virtual void OnEscape()
     {
       SaveScreenContrast(curPosition);
-      GoToMenu(MenuLevel::Root);
     }
     
   private:
@@ -226,7 +224,6 @@ class ColorMenu : public Menu
     virtual void OnEscape()
     {
       SaveBacklightColor(curPosition);
-      GoToMenu(MenuLevel::Root);
     }
 
   private:
@@ -304,18 +301,17 @@ class ClockMenu : public Menu
 
       x = glcd.drawString(x, 20, formatString_P(PSTR(" %s"), pm ? "PM" : "AM"));
 
-      glcd.drawLine(lineStart, 30, lineEnd, 30, WHITE);
+      if (pulseCount % 2 == 0)
+      {
+        int lineY = 20 + glcd.textHeight();
+        glcd.drawLine(lineStart, lineY, lineEnd, lineY, WHITE);
+      }
     }
     
     virtual void Activate()
     {
       editing = Hour;
       curPosition = RTC.now().hour();
-    }
-
-    virtual void OnEscape()
-    {
-      GoToMenu(MenuLevel::Root);
     }
 
     virtual void OnEnter()
@@ -410,12 +406,10 @@ void DrawMenu()
 
 void GoToRootMenu()
 {
-  beforeMenuState = currentState;
-  currentState = States::menu;
   GoToMenu(MenuLevel::Root);
 }
 
-void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDelta)
+bool HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDelta)
 {
   int minPosition = currentMenu->MinPosition();
   int maxPosition = minPosition + currentMenu->NumPositions() - 1;
@@ -424,6 +418,15 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
   if (alarmButtonDelta > 0)
   {
     currentMenu->OnEscape();
+    if (currentMenu == &rootMenu)
+    {
+      return true;
+    }
+    else
+    {
+      GoToMenu(MenuLevel::Root);
+      return false;
+    }
   }
 
   if (encoderButtonDelta > 0)
@@ -435,5 +438,7 @@ void HandleMenuInput(int alarmButtonDelta, int encoderButtonDelta, int encoderDe
   {
     currentMenu->OnScroll(encoderDelta);
   }
+
+  return false;
 }
 

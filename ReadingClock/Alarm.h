@@ -11,7 +11,7 @@ class Alarm
     void SetState(bool on);
     bool IsOn();
     
-    void Update(long deltaMilliseconds);
+    void Update(uint32_t deltaMilliseconds);
     
   private:
     void UpdateCurrentState();
@@ -19,7 +19,7 @@ class Alarm
   private:
     bool _isOn;
     int _currentStateIndex;
-    long _millisecondsSinceLastStateChange;
+    uint32_t _millisecondsSinceLastStateChange;
     void (*_beeperCallback)(bool);
 };
 

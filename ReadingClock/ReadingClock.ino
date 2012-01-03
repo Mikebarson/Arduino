@@ -6,7 +6,6 @@
 
 #include <JeeLib.h>
 #include <GLCD_ST7565.h>
-#include <avr/pgmspace.h>
 
 #include "globals.h"
 #include "Alarm.h"
@@ -14,7 +13,10 @@
 #include "utils.h"
 #include "fonts.h"
 
-Alarm alarm(&UpdateAlarmOutputs);
+static Alarm alarm(&UpdateAlarmOutputs);
+static int currentState;
+static int beforeMenuState;
+static volatile int lastInputPulseCount;
 
 void setup()
 {
@@ -30,6 +32,8 @@ void setup()
 
   encoder.Init();
   getTimeDeltaMillis();
+  
+  GoToState(States::idle);
 }
 
 void loop()
@@ -54,6 +58,13 @@ void loop()
   }
 
   glcd.refresh();
+  
+  // We don't go to sleep while the alarm is sounding because we need
+  // higher time precision -- when sleeping, millis() stops working right.
+  if (currentState != States::timerAlarmSounding)
+  {
+    Sleepy::powerDown();
+  }
 }
 
 void DrawDebuggingScreen(int timeDeltaMillis)
@@ -97,12 +108,12 @@ void DrawHomeScreen()
     }
   }
   
-  long secondsElapsed = timer.GetElapsedSeconds();
-  line = formatString_P(PSTR("%0.2ld:%0.2ld elapsed"), secondsElapsed / 60, secondsElapsed % 60);
+  int secondsElapsed = timer.GetElapsedSeconds();
+  line = formatString_P(PSTR("%0.2d:%0.2d elapsed"), secondsElapsed / 60, secondsElapsed % 60);
   glcd.drawString(0, 30, line);
   
-  long secondsRemaining = max(0, timer.GetTimespan() - secondsElapsed);
-  line = formatString_P(PSTR("%0.2ld:%0.2ld remaining"), secondsRemaining / 60, secondsRemaining % 60);
+  int secondsRemaining = max(0, timer.GetTimespan() - secondsElapsed);
+  line = formatString_P(PSTR("%0.2d:%0.2d remaining"), secondsRemaining / 60, secondsRemaining % 60);
   glcd.drawString(0, 40, line);
 
   Fonts::SelectFont(Fonts::Small);
@@ -141,17 +152,25 @@ void updateCurrentState()
 
   switch (currentState)
   {
+    case States::sleeping:
+      GoToState(States::idle);
+      break;
+      
     case States::idle:
       if (alarmButtonDelta > 0)
       {
-        timer.Reset();
-        timer.Start();
-        currentState = States::timerRunning;
+        GoToState(States::timerResetting);
+        GoToState(States::timerRunning);
       }
       
       if (encoderButtonDelta > 0)
       {
-        GoToRootMenu();
+        GoToState(States::menu);
+      }
+      
+      if ((pulseCount - lastInputPulseCount) > PULSES_PER_MINUTE)
+      {
+        GoToState(States::sleeping);
       }
       break;
       
@@ -159,73 +178,110 @@ void updateCurrentState()
       {
         if (timer.IsExpired())
         {
-          currentState = States::timerRunningAndExpired;
-          alarm.TurnOn();
+          GoToState(States::timerAlarmSounding);
         }
         
         if (alarmButtonDelta > 0)
         {
-          PauseTimer();
+          GoToState(States::timerPaused);
         }
         
         if (encoderButtonDelta > 0)
         {
-          PauseTimer();
-          GoToRootMenu();
+          GoToState(States::timerPaused);
+          GoToState(States::menu);
         }
       }
       break;
-      
-    case States::timerRunningAndExpired:
+
+    case States::timerAlarmSounding:
       {
         if (alarmButtonDelta > 0 || encoderButtonDelta > 0)
         {
-          PauseTimer();
-          alarm.TurnOff();
-          currentState = States::idle;
+          GoToState(States::idle);
         }
       }
       break;
-      
+
     case States::timerPaused:
       if (alarmButtonDelta > 0)
       {
-        currentState = States::timerRunning;
-        timer.Start();
+        GoToState(States::timerRunning);
       }
       
       if (encoderButtonDelta > 0)
       {
-        GoToRootMenu();
+        GoToState(States::menu);
       }
       break;
-      
-    case States::menu:      
-      HandleMenuInput(alarmButtonDelta, encoderButtonDelta, encoderDelta);
+
+    case States::menu:
+      if (HandleMenuInput(alarmButtonDelta, encoderButtonDelta, encoderDelta))
+      {
+        GoToState(beforeMenuState);
+      }
       break;
   }
 }
 
-void PauseTimer()
+void GoToState(int state)
 {
-  currentState = States::timerPaused;
-  timer.Pause();
+  switch (state)
+  {
+    case States::sleeping:
+      controlRTCSquareWave(false);
+      break;
+      
+    case States::idle:
+      lastInputPulseCount = pulseCount;
+      controlRTCSquareWave(true);
+      timer.Pause();
+      alarm.TurnOff();
+      break;
+      
+    case States::timerResetting:
+      timer.Reset();
+      break;
+      
+    case States::timerRunning:
+      timer.Start();
+      break;
+      
+    case States::timerAlarmSounding:
+      alarm.TurnOn();
+      break;
+
+    case States::timerPaused:
+      timer.Pause();
+      break;
+
+    case States::menu:
+      timer.Pause();
+      alarm.TurnOff();
+      beforeMenuState = currentState;
+      currentState = States::menu;
+      GoToRootMenu();
+      break;
+  }
+  
+  currentState = state;
 }
 
-/*
 ISR(WDT_vect)
 {
   Sleepy::watchdogEvent();
 }
-*/
 
 ISR(PCINT2_vect)
 {
-  ++squareCount;
+  ++pulseCount;
+  lastKnownMillis = millis();
 }
 
 ISR(PCINT1_vect)
 {
+  lastInputPulseCount = pulseCount;
+  
   turnLightsOn = true;
   
   encoderCountRaw += encoder.ReadDelta();
@@ -289,25 +345,29 @@ int getAlarmButtonDelta()
   return delta;
 }
 
-long getTimeDeltaMillis()
+uint32_t getTimeDeltaMillis()
 {
-  static long oldMillis = 0;
+  static byte oldPulseCount = 0;
   
-  long nowMillis = millis();
-  long deltaMillis = nowMillis - oldMillis;
-  oldMillis = nowMillis;
+  byte nowPulseCount = pulseCount;
+  byte deltaPulseCount = nowPulseCount - oldPulseCount;
+  oldPulseCount = nowPulseCount;
   
-  return deltaMillis;
+  uint32_t nowMillis = millis();
+  uint32_t deltaMillis = nowMillis - lastKnownMillis;
+  lastKnownMillis = nowMillis;
+
+  return (deltaPulseCount * MILLIS_PER_PULSE) + deltaMillis;
 }
 
 void adjustLights()
 {
-  static long lastLightsOnMillis = 0;
-  long currentMillis = millis();
+  static byte lastLightsOnPulseCount = 0;
+  byte currentPulseCount = pulseCount;
   
   if (turnLightsOn)
   {
-    lastLightsOnMillis = currentMillis;
+    lastLightsOnPulseCount = currentPulseCount;
     turnLightsOn = false;
     lcdBacklight.Enable();
 
@@ -319,7 +379,8 @@ void adjustLights()
     return;
   }
   
-  bool turnLightsOff = (currentMillis - lastLightsOnMillis) > Settings::lightsOffDelayMillis;
+  uint32_t deltaMillis = (currentPulseCount - lastLightsOnPulseCount) * MILLIS_PER_PULSE;
+  bool turnLightsOff = deltaMillis > (Settings::lightsOffDelaySeconds * 1000L);
   if (turnLightsOff)
   {
     lcdBacklight.Disable();

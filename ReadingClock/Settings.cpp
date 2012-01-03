@@ -22,7 +22,7 @@ static const int defaultTimerMinutes = 15;
 const byte Settings::minTimerMinutes = 1;
 const byte Settings::maxTimerMinutes = 120;
 
-const long Settings::lightsOffDelayMillis = 10000;
+const byte Settings::lightsOffDelaySeconds = 10;
 
 void Settings::readAllSettings()
 {

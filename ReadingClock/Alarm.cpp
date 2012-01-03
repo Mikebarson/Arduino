@@ -15,7 +15,7 @@ Alarm::Alarm(void (*beeperCallback)(bool))
 {
 }
 
-void Alarm::Update(long deltaMilliseconds)
+void Alarm::Update(uint32_t deltaMilliseconds)
 {
   if (!_isOn)
   {

@@ -16,7 +16,9 @@ volatile int encoderCountRaw = 0;
 volatile int encoderButtonPressCount = 0;
 volatile int alarmButtonPressCount = 0;
 volatile bool turnLightsOn = true;
-volatile int squareCount;
+
+volatile byte pulseCount = 0;
+volatile uint32_t lastKnownMillis = 0;
 
 int currentState = States::idle;
 

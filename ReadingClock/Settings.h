@@ -20,7 +20,7 @@ class Settings
     static const byte minTimerMinutes;
     static const byte maxTimerMinutes;
     
-    static const long lightsOffDelayMillis;
+    static const byte lightsOffDelaySeconds;
 };
 
 #endif // _settings_h

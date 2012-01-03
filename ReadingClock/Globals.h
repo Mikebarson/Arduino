@@ -13,14 +13,19 @@ class States
   public:
     enum Values
     {
+      sleeping,
       idle,
+      timerResetting,
       timerRunning,
-      timerRunningAndExpired,
+      timerAlarmSounding,
       timerPaused,
       timerStopped,
       menu,
     };
 };
+
+#define PULSES_PER_MINUTE 120
+#define MILLIS_PER_PULSE 500L
 
 extern GLCD_ST7565 glcd;
 extern RTC_DS1307 RTC;
@@ -38,11 +43,9 @@ extern volatile int encoderCountRaw;
 extern volatile int encoderButtonPressCount;
 extern volatile int alarmButtonPressCount;
 extern volatile bool turnLightsOn;
-extern volatile int squareCount;
 
-extern int currentState;
-
-extern int beforeMenuState;
+extern volatile byte pulseCount;
+extern volatile uint32_t lastKnownMillis;
 
 extern Settings settings;
 

@@ -10,7 +10,7 @@ void Timer::SetTimespan(int seconds)
   timespanMilliseconds = seconds * 1000L;
 }
 
-long Timer::GetTimespan()
+int Timer::GetTimespan()
 {
   return timespanMilliseconds / 1000L;
 }
@@ -30,7 +30,7 @@ void Timer::Pause()
   running = false;
 }
 
-void Timer::Update(long deltaMilliseconds)
+void Timer::Update(uint32_t deltaMilliseconds)
 {
   if (!running)
   {
@@ -40,7 +40,7 @@ void Timer::Update(long deltaMilliseconds)
   elapsedMilliseconds += deltaMilliseconds;
 }
 
-long Timer::GetElapsedSeconds()
+int Timer::GetElapsedSeconds()
 {
   return elapsedMilliseconds / 1000L;
 }
