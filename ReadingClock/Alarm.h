@@ -1,3 +1,6 @@
+#ifndef _alarm_h
+#define _alarm_h
+
 class Alarm
 {
   public:
@@ -19,3 +22,6 @@ class Alarm
     long _millisecondsSinceLastStateChange;
     void (*_beeperCallback)(bool);
 };
+
+#endif // _alarm_h
+

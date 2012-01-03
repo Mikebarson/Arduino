@@ -1,3 +1,6 @@
+#ifndef _encoder_h
+#define _encoder_h
+
 class Encoder
 {
   public:
@@ -10,4 +13,6 @@ class Encoder
     int pinA, pinB;
     volatile byte state;
 };
+
+#endif // _encoder_h
 

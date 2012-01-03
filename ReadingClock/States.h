@@ -1,3 +1,6 @@
+#ifndef _states_h
+#define _states_h
+
 class States
 {
   public:
@@ -11,4 +14,6 @@ class States
       menu,
     };
 };
+
+#endif // _states_h
 

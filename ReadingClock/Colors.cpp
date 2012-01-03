@@ -38,13 +38,6 @@ class ColorNames
     }
 };
 
-Color::Color() { }
-
-Color::Color(byte red, byte green, byte blue, PGM_P name)
-  : red(red), green(green), blue(blue), name(name)
-{
-}
-
 static const Color allColors[] =
 {
   Color(0xFF, 0xFF, 0xFF, ColorNames::GetName(ColorNames::White)),
@@ -55,6 +48,11 @@ static const Color allColors[] =
   Color(0, 0, 0xFF, ColorNames::GetName(ColorNames::Blue)),
   Color(0xFF, 0, 0xFF, ColorNames::GetName(ColorNames::Purple)),
 };
+
+Color::Color(byte red, byte green, byte blue, PGM_P name)
+  : red(red), green(green), blue(blue), name(name)
+{
+}
 
 int Colors::NumColors()
 {
@@ -68,10 +66,9 @@ Color Colors::GetColor(int i)
 
 int Colors::GetColorIndex(byte red, byte green, byte blue)
 {
-  Color color;
   for (int i = 0; i < NumColors(); ++i)
   {
-    color = allColors[i];
+    const Color &color = allColors[i];
     if (color.red == red &&
         color.green == green &&
         color.blue == blue)

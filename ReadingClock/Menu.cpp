@@ -272,7 +272,7 @@ class ClockMenu : public Menu
 
     virtual void Draw()
     {
-      glcd.drawString_P(0, 0, PSTR("Setting the time..."));
+      glcd.drawString_P(0, 0, PSTR("Adjusting clock..."));
 
       DateTime now = RTC.now();
       int hour = now.hour();

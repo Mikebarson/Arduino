@@ -1,3 +1,6 @@
+#ifndef _button_h
+#define _button_h
+
 class Button
 {
   public:
@@ -9,4 +12,6 @@ class Button
     int pin;
     volatile bool lastState;
 };
+
+#endif // _button_h
 

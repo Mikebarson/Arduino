@@ -1,4 +1,5 @@
-#include "FastPin.h"
+#ifndef _led_h
+#define _led_h
 
 class Led
 {
@@ -10,6 +11,8 @@ class Led
     void SetState(bool on);
     
   private:
-    FastPin _pin;
+    int _pin;
 };
+
+#endif // _led_h
 

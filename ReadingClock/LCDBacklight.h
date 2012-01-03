@@ -1,3 +1,6 @@
+#ifndef _lcdbacklight_h
+#define _lcdbacklight_h
+
 class LCDBacklight
 {
   private:
@@ -15,4 +18,6 @@ class LCDBacklight
   private:
     void WriteToDevice(byte red, byte green, byte blue);
 };
+
+#endif // _lcdbacklight_h
 

@@ -52,7 +52,6 @@ void loop()
   }
   else
   {
-    //DrawDebuggingScreen(timeDeltaMillis);
     DrawHomeScreen();
   }
 
@@ -72,39 +71,39 @@ void DrawDebuggingScreen(int timeDeltaMillis)
 
 void DrawHomeScreen()
 {
-    const char * line;
-    
-    DateTime now = RTC.now();
-    int hour = now.hour();
-    bool pm = hour > 11;
-    hour %= 12;
+  const char * line;
+  
+  DateTime now = RTC.now();
+  int hour = now.hour();
+  bool pm = hour > 11;
+  hour %= 12;
 
-    line = formatString_P(PSTR("Time: %d:%0.2d:%0.2d %s"),
-      hour == 0 ? 12 : hour,
-      now.minute(),
-      now.second(),
-      pm ? "PM" : "AM");
-    glcd.drawString(0, 0, line);
-    
-    if (currentState == States::timerPaused)
+  line = formatString_P(PSTR("Time: %d:%0.2d:%0.2d %s"),
+    hour == 0 ? 12 : hour,
+    now.minute(),
+    now.second(),
+    pm ? "PM" : "AM");
+  glcd.drawString(0, 0, line);
+  
+  if (currentState == States::timerPaused)
+  {
+    // Flash the "paused" text
+    if (now.second() % 2 == 0)
     {
-      // Flash the "paused" text
-      if (now.second() % 2 == 0)
-      {
-        glcd.drawString_P(0, 20, PSTR("Timer Paused"));
-      }
+      glcd.drawString_P(0, 20, PSTR("Timer Paused"));
     }
-    
-    long secondsElapsed = timer.GetElapsedSeconds();
-    
-    line = formatString_P(PSTR("%0.2ld:%0.2ld elapsed"), secondsElapsed / 60, secondsElapsed % 60);
-    glcd.drawString(0, 30, line);
-    
-    long secondsRemaining = timer.GetTimespan() - secondsElapsed;
-    line = formatString_P(PSTR("%0.2ld:%0.2ld remaining"), secondsRemaining / 60, secondsRemaining % 60);
-    glcd.drawString(0, 40, line);
-    
-    glcd.drawString(0, 50, toString(freeRam()));
+  }
+  
+  long secondsElapsed = timer.GetElapsedSeconds();
+  
+  line = formatString_P(PSTR("%0.2ld:%0.2ld elapsed"), secondsElapsed / 60, secondsElapsed % 60);
+  glcd.drawString(0, 30, line);
+  
+  long secondsRemaining = timer.GetTimespan() - secondsElapsed;
+  line = formatString_P(PSTR("%0.2ld:%0.2ld remaining"), secondsRemaining / 60, secondsRemaining % 60);
+  glcd.drawString(0, 40, line);
+
+  glcd.drawString(0, 50, toString(freeRam()));
 }
 
 void configureInterrupts()

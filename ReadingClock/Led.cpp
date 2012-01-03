@@ -4,21 +4,21 @@
 Led::Led(int pin)
   : _pin(pin)
 {
-  pinMode(pin, OUTPUT);
-  _pin.DigitalWrite(LOW);
+  pinMode(_pin, OUTPUT);
+  digitalWrite(_pin, LOW);
 }
 
 void Led::Enable()
 {
-  _pin.DigitalWrite(HIGH);
+  digitalWrite(_pin, HIGH);
 }
 
 void Led::Disable()
 {
-  _pin.DigitalWrite(LOW);
+  digitalWrite(_pin, LOW);
 }
 
 void Led::SetState(bool on)
 {
-  _pin.DigitalWrite(on ? HIGH : LOW);
+  digitalWrite(_pin, on ? HIGH : LOW);
 }

@@ -4,7 +4,6 @@
 class Color
 {
   public:
-    Color();
     Color(byte red, byte green, byte blue, PGM_P name);
     
     byte red, green, blue;

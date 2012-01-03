@@ -1,3 +1,6 @@
+#ifndef _timer_h
+#define _timer_h
+
 class Timer
 {
   public:
@@ -21,4 +24,6 @@ class Timer
     long elapsedMilliseconds;
     long timespanMilliseconds;
 };
+
+#endif // _timer_h
 

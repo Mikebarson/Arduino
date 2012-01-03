@@ -1,3 +1,6 @@
+#ifndef _piezo_h
+#define _piezo_h
+
 #include <Arduino.h>
 #include <Tone.h>
 
@@ -14,3 +17,6 @@ class Piezo
     int _frequencyPin;
     int _onOffPin;
 };
+
+#endif // _piezo_h
+
