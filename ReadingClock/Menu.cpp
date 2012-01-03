@@ -80,7 +80,7 @@ class TimerMenu : public Menu
   public:
     TimerMenu()
     {
-      ResetValues();
+      ResetCurPosition();
     }
     
     virtual int MinPosition() { return Settings::minTimerMinutes; }
@@ -88,7 +88,10 @@ class TimerMenu : public Menu
     
     virtual void Activate()
     {
-      ResetValues();
+      ResetCurPosition();
+
+      // Also, reset the timer.
+      timer.Reset();
     }
     
     virtual void Draw()
@@ -127,7 +130,7 @@ class TimerMenu : public Menu
       timer.SetTimespan(timerMinutes * 60);
     }
     
-    void ResetValues()
+    void ResetCurPosition()
     {
       curPosition = min(Settings::maxTimerMinutes, max(Settings::minTimerMinutes, settings.timerMinutes));
     }    
@@ -138,7 +141,7 @@ class ContrastMenu : public Menu
   public:
     ContrastMenu()
     {
-      ResetValues();
+      ResetCurPosition();
     }
     
     virtual int MinPosition() { return Settings::minLcdContrast; }
@@ -146,7 +149,7 @@ class ContrastMenu : public Menu
     
     virtual void Activate()
     {
-      ResetValues();
+      ResetCurPosition();
     }
     
     virtual void Draw()
@@ -173,7 +176,7 @@ class ContrastMenu : public Menu
     }
     
   private:
-    void ResetValues()
+    void ResetCurPosition()
     {
       curPosition = min(Settings::maxLcdContrast, max(Settings::minLcdContrast, settings.lcdContrast));
     }
@@ -196,7 +199,7 @@ class ColorMenu : public Menu
   public:
     ColorMenu()
     {
-      ResetValues();
+      ResetCurPosition();
     }
     
     virtual int MinPosition() { return 0; }
@@ -204,7 +207,7 @@ class ColorMenu : public Menu
     
     virtual void Activate()
     {
-      ResetValues();
+      ResetCurPosition();
     }
     
     virtual void Draw()
@@ -227,7 +230,7 @@ class ColorMenu : public Menu
     }
 
   private:
-    void ResetValues()
+    void ResetCurPosition()
     {
       curPosition = Colors::GetColorIndex(settings.lcdRed, settings.lcdGreen, settings.lcdBlue);
       if (curPosition < 0)
