@@ -4,14 +4,23 @@
 #include <Arduino.h>
 #include <GLCD_ST7565.h>
 #include <RTClib.h>
-#include "Pins.h"
-#include "LCDBacklight.h"
-#include "Encoder.h"
-#include "Piezo.h"
+#include "Hardware.h"
 #include "Timer.h"
-#include "Button.h"
-#include "Led.h"
 #include "Settings.h"
+
+class States
+{
+  public:
+    enum Values
+    {
+      idle,
+      timerRunning,
+      timerRunningAndExpired,
+      timerPaused,
+      timerStopped,
+      menu,
+    };
+};
 
 extern GLCD_ST7565 glcd;
 extern RTC_DS1307 RTC;

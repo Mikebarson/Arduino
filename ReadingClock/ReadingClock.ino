@@ -9,7 +9,6 @@
 #include <avr/pgmspace.h>
 
 #include "globals.h"
-#include "States.h"
 #include "Alarm.h"
 #include "menu.h"
 #include "utils.h"
