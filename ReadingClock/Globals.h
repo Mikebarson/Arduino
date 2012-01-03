@@ -24,7 +24,7 @@ class States
     };
 };
 
-#define PULSES_PER_MINUTE 120
+#define PULSES_PER_SECOND 2
 #define MILLIS_PER_PULSE 500L
 
 extern GLCD_ST7565 glcd;

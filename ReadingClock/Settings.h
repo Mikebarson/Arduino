@@ -21,6 +21,7 @@ class Settings
     static const byte maxTimerMinutes;
     
     static const byte lightsOffDelaySeconds;
+    static const int autoSleepDelaySeconds;
 };
 
 #endif // _settings_h

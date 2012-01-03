@@ -23,6 +23,7 @@ const byte Settings::minTimerMinutes = 1;
 const byte Settings::maxTimerMinutes = 120;
 
 const byte Settings::lightsOffDelaySeconds = 10;
+const int Settings::autoSleepDelaySeconds = 120;
 
 void Settings::readAllSettings()
 {

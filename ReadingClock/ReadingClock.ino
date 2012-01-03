@@ -90,6 +90,11 @@ void DrawSleepingScreen()
   
   Fonts::SelectFont(Fonts::Small);
   int width = glcd.measureString_P(sleepingText);
+  int height = glcd.textHeight();
+  
+  int x = ((LCDWIDTH - width) / 2) - 1;
+  int y = ((LCDHEIGHT - height) / 2) - 1;
+  glcd.drawString_P(x, y, sleepingText);
 }
 
 void DrawHomeScreen()
@@ -183,7 +188,7 @@ void updateCurrentState()
         GoToState(States::menu);
       }
       
-      if ((pulseCount - lastInputPulseCount) > PULSES_PER_MINUTE)
+      if ((pulseCount - lastInputPulseCount) > (Settings::autoSleepDelaySeconds * PULSES_PER_SECOND))
       {
         GoToState(States::sleeping);
       }
