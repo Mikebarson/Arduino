@@ -1,8 +1,10 @@
 #include <Arduino.h>
+
 #include "Menu.h"
 #include "Colors.h"
 #include "States.h"
 #include "globals.h"
+#include "fonts.h"
 #include "utils.h"
 
 void GoToMenu(int menuLevel);
@@ -403,6 +405,7 @@ void GoToMenu(int state)
 
 void DrawMenu()
 {
+  Fonts::SelectFont(Fonts::Regular);
   currentMenu->Draw();
 }
 

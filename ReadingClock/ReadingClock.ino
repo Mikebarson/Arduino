@@ -7,14 +7,13 @@
 #include <JeeLib.h>
 #include <GLCD_ST7565.h>
 #include <avr/pgmspace.h>
-#include <utility/font_clR6x8.h>
-#include <utility/font_luBS18.h>
 
 #include "globals.h"
 #include "States.h"
 #include "Alarm.h"
 #include "menu.h"
 #include "utils.h"
+#include "fonts.h"
 
 Alarm alarm(&UpdateAlarmOutputs);
 
@@ -60,6 +59,7 @@ void loop()
 
 void DrawDebuggingScreen(int timeDeltaMillis)
 {
+  Fonts::SelectFont(Fonts::Regular);
   glcd.drawString(0, 0, formatString_P(PSTR("Encoder: %0.2d"), encoderCountRaw));
   glcd.drawString(0, 10, formatString_P(PSTR("Encoder Button: %0.2d"), encoderButtonPressCount));
   glcd.drawString(0, 20, formatString_P(PSTR("Alarm Button: %0.2d"), alarmButtonPressCount));
@@ -71,18 +71,23 @@ void DrawDebuggingScreen(int timeDeltaMillis)
 void DrawHomeScreen()
 {
   const char * line;
+  byte textWidth;
   
   DateTime now = RTC.now();
   int hour = now.hour();
   bool pm = hour > 11;
   hour %= 12;
 
-  line = formatString_P(PSTR("Time: %d:%0.2d:%0.2d %s"),
+  Fonts::SelectFont(Fonts::Small);
+  line = formatString_P(PSTR("%d:%0.2d:%0.2d %s"),
     hour == 0 ? 12 : hour,
     now.minute(),
     now.second(),
     pm ? "PM" : "AM");
-  glcd.drawString(0, 0, line);
+  textWidth = glcd.measureString(line);
+  glcd.drawString(LCDWIDTH - textWidth - 1, 0, line);
+
+  Fonts::SelectFont(Fonts::Regular);
   
   if (currentState == States::timerPaused)
   {
@@ -94,15 +99,17 @@ void DrawHomeScreen()
   }
   
   long secondsElapsed = timer.GetElapsedSeconds();
-  
   line = formatString_P(PSTR("%0.2ld:%0.2ld elapsed"), secondsElapsed / 60, secondsElapsed % 60);
   glcd.drawString(0, 30, line);
   
-  long secondsRemaining = timer.GetTimespan() - secondsElapsed;
+  long secondsRemaining = max(0, timer.GetTimespan() - secondsElapsed);
   line = formatString_P(PSTR("%0.2ld:%0.2ld remaining"), secondsRemaining / 60, secondsRemaining % 60);
   glcd.drawString(0, 40, line);
 
-  glcd.drawString(0, 50, toString(freeRam()));
+  Fonts::SelectFont(Fonts::Small);
+  line = formatString_P(PSTR("%d bytes free"), freeRam());
+  textWidth = glcd.measureString(line);
+  glcd.drawString(LCDWIDTH - textWidth - 1, LCDHEIGHT - glcd.textHeight() - 1, line);
 }
 
 void configureInterrupts()
@@ -237,7 +244,7 @@ void configureLCD()
   digitalWrite(Pins::lcdCS, LOW);
 
   glcd.begin(settings.lcdContrast);
-  glcd.setFont(font_clR6x8);
+  Fonts::SelectFont(Fonts::Regular);
   
   delay(500);
 }
