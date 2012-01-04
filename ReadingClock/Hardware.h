@@ -67,7 +67,7 @@ class LCDBacklight
     void SetColor(byte red, byte green, byte blue);
     void Enable();
     void Disable();
-    
+
   private:
     void WriteToDevice(byte red, byte green, byte blue);
 };

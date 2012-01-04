@@ -93,19 +93,6 @@ void DrawDebuggingScreen(int timeDeltaMillis)
   glcd.drawString(0, 40, formatString_P(PSTR("Elapsed Time: %d"), timer.GetElapsedSeconds()));
 }
 
-void DrawSleepingScreen()
-{
-  PGM_P sleepingText = PSTR("ZZZZZ.....");
-  
-  Fonts::SelectFont(Fonts::Small);
-  int width = glcd.measureString_P(sleepingText);
-  int height = glcd.textHeight();
-  
-  int x = ((LCDWIDTH - width) / 2) - 1;
-  int y = ((LCDHEIGHT - height) / 2) - 1;
-  glcd.drawString_P(x, y, sleepingText);
-}
-
 void DrawHomeScreen()
 {
   const char * line;
@@ -260,10 +247,10 @@ void GoToSleepIfAppropriate()
   // Turn off the pulse system so it doesn't wake us back up.
   EnablePulseSystem(false);
 
-  // Draw the sleeping screen contents.
-  glcd.clear();
+  // Draw the sleeping screen contents, then turn off the LCD's control chip and its backlight
   DrawSleepingScreen();
-  glcd.refresh();
+  digitalWrite(Pins::lcdCS, HIGH);
+  lcdBacklight.Disable();
   
   // Power down until we receive a hardware interrupt.
   Sleepy::powerDown();
@@ -272,6 +259,26 @@ void GoToSleepIfAppropriate()
   // Turn the pulse back on.
   EnablePulseSystem(true);
   lastInputPulseCount = pulseCount;
+  
+  // Re-enable the LCD control chip
+  digitalWrite(Pins::lcdCS, LOW);
+}
+
+void DrawSleepingScreen()
+{
+  glcd.clear();
+  
+  PGM_P sleepingText = PSTR("ZZZZZ.....");
+  
+  Fonts::SelectFont(Fonts::Small);
+  int width = glcd.measureString_P(sleepingText);
+  int height = glcd.textHeight();
+  
+  int x = ((LCDWIDTH - width) / 2) - 1;
+  int y = ((LCDHEIGHT - height) / 2) - 1;
+  glcd.drawString_P(x, y, sleepingText);
+
+  glcd.refresh();
 }
 
 void GoToState(int state)
