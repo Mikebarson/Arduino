@@ -15,9 +15,8 @@
 
 static Alarm alarm(&UpdateAlarmOutputs);
 static int currentState;
-static int beforeSleepingState;
 static int beforeMenuState;
-static volatile int lastInputPulseCount;
+static volatile uint32_t lastInputPulseCount = 0;
 
 void setup()
 {
@@ -34,6 +33,7 @@ void setup()
   encoder.Init();
   getTimeDeltaMillis();
   
+  EnablePulseSystem(true);
   GoToState(States::idle);
 }
 
@@ -51,10 +51,6 @@ void loop()
   
   switch (currentState)
   {
-    case States::sleeping:
-      DrawSleepingScreen();
-      break;
-      
     case States::menu:
       DrawMenu();
       break;
@@ -71,8 +67,8 @@ void loop()
   
   glcd.refresh();
   
-  // We don't go to sleep while the alarm is sounding because we need
-  // higher time precision -- when sleeping, millis() stops working right.
+  // We don't power down while the alarm is sounding because we need
+  // higher time precision -- when powered down, millis() stops working right.
   if (currentState != States::timerAlarmSounding)
   {
     Sleepy::powerDown();
@@ -134,7 +130,7 @@ void DrawHomeScreen()
   if (currentState == States::timerPaused)
   {
     // Flash the "paused" text
-    if (now.second() % 2 == 0)
+    if (pulseCount % 2 == 0)
     {
       glcd.drawString_P(0, 20, PSTR("Timer Paused"));
     }
@@ -179,11 +175,6 @@ void updateCurrentState()
 
   switch (currentState)
   {
-    case States::sleeping:
-      // As soon as we wake up from sleeping, enter idle mode.
-      GoToState(beforeSleepingState);
-      break;
-
     case States::idle:
       if (alarmButtonDelta > 0)
       {
@@ -246,34 +237,48 @@ void updateCurrentState()
       break;
   }
   
-  EnterSleepModeIfAppropriate();
+  GoToSleepIfAppropriate();
 }
 
-void EnterSleepModeIfAppropriate()
+void GoToSleepIfAppropriate()
 {
-  if (currentState == States::idle ||
-      currentState == States::timerPaused ||
-      currentState == States::menu)
+  static const uint32_t autoSleepPulseDeltaThreshold = Settings::autoSleepDelaySeconds * (uint32_t)PULSES_PER_SECOND;
+    
+  bool currentStateIsSleepable =
+    currentState == States::idle ||
+    currentState == States::timerPaused ||
+    currentState == States::menu;
+
+  uint32_t pulseDelta = pulseCount - lastInputPulseCount;
+
+  if (!currentStateIsSleepable ||
+      pulseDelta < autoSleepPulseDeltaThreshold)
   {
-    if ((pulseCount - lastInputPulseCount) > (Settings::autoSleepDelaySeconds * PULSES_PER_SECOND))
-    {
-      GoToState(States::sleeping);
-    }
+    return;
   }
+
+  // Turn off the pulse system so it doesn't wake us back up.
+  EnablePulseSystem(false);
+
+  // Draw the sleeping screen contents.
+  glcd.clear();
+  DrawSleepingScreen();
+  glcd.refresh();
+  
+  // Power down until we receive a hardware interrupt.
+  Sleepy::powerDown();
+  
+  // Here is where we wake back up because of a hardware interrupt.
+  // Turn the pulse back on.
+  EnablePulseSystem(true);
+  lastInputPulseCount = pulseCount;
 }
 
 void GoToState(int state)
 {
   switch (state)
   {
-    case States::sleeping:
-      beforeSleepingState = currentState;
-      controlRTCSquareWave(false);
-      break;
-      
     case States::idle:
-      lastInputPulseCount = pulseCount;
-      controlRTCSquareWave(true);
       timer.Pause();
       alarm.TurnOff();
       break;
@@ -347,10 +352,9 @@ void configureRTC()
 {
   Wire.begin();  
   RTC.begin();
-  controlRTCSquareWave(false);
 }
 
-void controlRTCSquareWave(bool enable)
+void EnablePulseSystem(bool enable)
 {
   RTC.controlSquareWaveOutput(enable, RTC_DS1307::OneHz, false);
 }

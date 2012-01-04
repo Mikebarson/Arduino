@@ -13,7 +13,6 @@ class States
   public:
     enum Values
     {
-      sleeping,
       idle,
       timerResetting,
       timerRunning,
@@ -46,7 +45,7 @@ extern volatile int encoderButtonPressCount;
 extern volatile int alarmButtonPressCount;
 extern volatile bool turnLightsOn;
 
-extern volatile byte pulseCount;
+extern volatile uint32_t pulseCount;
 extern volatile uint32_t lastKnownMillis;
 
 extern Settings settings;

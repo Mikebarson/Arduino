@@ -17,7 +17,7 @@ volatile int encoderButtonPressCount = 0;
 volatile int alarmButtonPressCount = 0;
 volatile bool turnLightsOn = true;
 
-volatile byte pulseCount = 0;
+volatile uint32_t pulseCount = 0;
 volatile uint32_t lastKnownMillis = 0;
 
 int currentState = States::idle;

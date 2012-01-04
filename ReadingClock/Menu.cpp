@@ -377,7 +377,7 @@ class AboutMenu : public Menu
     }
 };
 
-sRootMenu rootMenu;
+RootMenu rootMenu;
 TimerMenu timerMenu;
 ContrastMenu contrastMenu;
 ColorMenu colorMenu;
