@@ -225,6 +225,12 @@ void updateCurrentState()
     case States::menu:
       if (HandleMenuInput(alarmButtonDelta, encoderButtonDelta, encoderDelta))
       {
+        if (beforeMenuState == States::timerPaused &&
+            timer.GetElapsedSeconds() == 0)
+        {
+          beforeMenuState = States::idle;
+        }
+        
         GoToState(beforeMenuState);
       }
       break;
