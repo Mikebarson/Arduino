@@ -9,10 +9,13 @@ class Settings
     void writeTimerMinutes();
     void writeLcdContrast();
     void writeLcdColor();
-    
+    void writeOwnerName(const char *ownerName);
+
     byte lcdContrast;
     byte lcdRed, lcdGreen, lcdBlue;
     byte timerMinutes;
+    
+    char ownerName[15];
     
     static const byte minLcdContrast;
     static const byte maxLcdContrast;

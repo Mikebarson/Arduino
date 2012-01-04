@@ -98,12 +98,15 @@ void DrawHomeScreen()
   const char * line;
   byte textWidth;
   
+  Fonts::SelectFont(Fonts::Small);
+  
+  glcd.drawString(0, 0, settings.ownerName);
+
   DateTime now = RTC.now();
   int hour = now.hour();
   bool pm = hour > 11;
   hour %= 12;
 
-  Fonts::SelectFont(Fonts::Small);
   line = formatString_P(PSTR("%d:%0.2d:%0.2d %s"),
     hour == 0 ? 12 : hour,
     now.minute(),
@@ -111,6 +114,9 @@ void DrawHomeScreen()
     pm ? "PM" : "AM");
   textWidth = glcd.measureString(line);
   glcd.drawString(LCDWIDTH - textWidth - 1, 0, line);
+  
+  byte textHeight = glcd.textHeight();
+  glcd.drawLine(0, textHeight, LCDWIDTH - 1, textHeight, WHITE);
 
   Fonts::SelectFont(Fonts::Regular);
   

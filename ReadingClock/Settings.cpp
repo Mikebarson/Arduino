@@ -11,6 +11,7 @@ struct EEPROMAddresses
     lcdGreen = 2,
     lcdBlue = 3,
     timerMinutes = 4,
+    ownerNameStart = 10,
   };
 };
 
@@ -44,6 +45,12 @@ void Settings::readAllSettings()
   {
     timerMinutes = defaultTimerMinutes;
   }
+
+  int len = sizeof(ownerName) / sizeof(ownerName[0]);
+  for (int i = 0; i < len; ++i)
+  {
+    ownerName[i] = EEPROM.read(EEPROMAddresses::ownerNameStart + i);
+  }
 }
 
 void Settings::writeTimerMinutes()
@@ -61,5 +68,17 @@ void Settings::writeLcdColor()
   EEPROM.write(EEPROMAddresses::lcdRed, lcdRed);
   EEPROM.write(EEPROMAddresses::lcdGreen, lcdGreen);
   EEPROM.write(EEPROMAddresses::lcdBlue, lcdBlue);
+}
+
+void Settings::writeOwnerName(const char *ownerName)
+{
+  int len = 0;
+  for (int i = 0; ownerName[i] != 0; ++i)
+  {
+    EEPROM.write(EEPROMAddresses::ownerNameStart + i, ownerName[i]);
+    ++len;
+  }
+  
+  EEPROM.write(EEPROMAddresses::ownerNameStart + len, 0);
 }
 
