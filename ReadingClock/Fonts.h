@@ -8,6 +8,7 @@ class Fonts
     {
       Regular,
       Small,
+      Tiny,
     };
     
     static void SelectFont(FontSize fontSize);

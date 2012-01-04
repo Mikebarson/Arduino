@@ -371,9 +371,19 @@ class AboutMenu : public Menu
     virtual void Draw()
     {
       glcd.drawString_P(0, 0, PSTR("About..."));
-      glcd.drawString_P(0, 20, PSTR("Firmware timestamp:"));
-      glcd.drawString(0, 30, __DATE__);
-      glcd.drawString(0, 40, __TIME__);
+      
+      Fonts::SelectFont(Fonts::Small);
+      int smallTextHeight = glcd.textHeight();
+      glcd.drawString_P(0, 15, PSTR("THIS READING TIMER WAS"));
+      glcd.drawString_P(0, 15 + smallTextHeight, PSTR("CREATED BY DAVID CARLEY"));
+      glcd.drawString_P(0, 15 + smallTextHeight * 2, PSTR("WITH LOVE FOR"));
+      glcd.drawString(0, 15 + smallTextHeight * 3, settings.ownerName);
+
+      Fonts::SelectFont(Fonts::Tiny);
+      int tinyTextHeight = glcd.textHeight();
+      const char * timeStamp = formatString_P(PSTR("%s %s"), __DATE__, __TIME__);
+      int width = glcd.measureString(timeStamp);
+      glcd.drawString(LCDWIDTH - width - 1, LCDHEIGHT - tinyTextHeight - 1, timeStamp);
     }
 };
 
