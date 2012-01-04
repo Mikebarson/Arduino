@@ -95,6 +95,7 @@ void DrawDebuggingScreen(int timeDeltaMillis)
 
 void DrawHomeScreen()
 {
+  static const int mainTextLeftOffset = 20;
   const char * line;
   byte textWidth;
   
@@ -125,17 +126,17 @@ void DrawHomeScreen()
     // Flash the "paused" text
     if (pulseCount % 2 == 0)
     {
-      glcd.drawString_P(0, 20, PSTR("Timer Paused"));
+      glcd.drawString_P(mainTextLeftOffset, 20, PSTR("Timer Paused"));
     }
   }
   
   int secondsElapsed = timer.GetElapsedSeconds();
   line = formatString_P(PSTR("%0.2d:%0.2d elapsed"), secondsElapsed / 60, secondsElapsed % 60);
-  glcd.drawString(0, 30, line);
+  glcd.drawString(mainTextLeftOffset, 30, line);
   
   int secondsRemaining = max(0, timer.GetTimespan() - secondsElapsed);
   line = formatString_P(PSTR("%0.2d:%0.2d remaining"), secondsRemaining / 60, secondsRemaining % 60);
-  glcd.drawString(0, 40, line);
+  glcd.drawString(mainTextLeftOffset, 40, line);
 }
 
 void configureInterrupts()
