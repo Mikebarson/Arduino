@@ -4,9 +4,12 @@
  
 RTC_DS1307 RTC;
 Servo myservo;
-int offPosition = 98;
-int bluePosition = 128;
-int whitePosition = 58;
+
+const int servoSignalPin = 9;
+
+const int offPosition = 98;
+const int bluePosition = 128;
+const int whitePosition = 58;
 
 int currentPosition;
 
@@ -51,17 +54,16 @@ void setup()
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(__DATE__, __TIME__));
   }
+
+  myservo.attach(servoSignalPin);
   
   positionServo(offPosition);
 } 
 
 void positionServo(int position)
 {
-    myservo.attach(9);
     currentPosition = position;
     myservo.write(position);
-    delay(1000);  // Wait long enough for the motion to complete.
-    myservo.detach();
 }
 
 int getPositionForTime(DateTime time)
