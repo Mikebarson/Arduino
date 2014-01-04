@@ -197,9 +197,16 @@ class GSM
     int isIP(const char* cadena);
 
   public:
+    inline void listen()
+    {
 	#ifdef UNO
-		WideTextFinder _tf;
+	    _cell.listen();
 	#endif
+    }
+
+    #ifdef UNO
+	WideTextFinder _tf;
+    #endif
     inline void setStatus(GSM_st_e status) { _status = status; }  
     GSM();
     inline int getStatus(){   return _status; };
