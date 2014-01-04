@@ -199,16 +199,18 @@ void readSMS()
       Serial.print("error ");
       Serial.println(answer, DEC);
     }
+    
+    sendATcommand("AT+CMGD=1", "OK", 2000);
 }
 
 int readGSMUntil(int i, char *chars)
 {
   int charIndex = 0;
-  char c;
   while (chars[charIndex] != '\0')
   {
-    if (c = gsmSerial.read())
+    if (gsmSerial.available())
     {
+      char c = gsmSerial.read();
       smsBuffer[i++] = c;
       
       if (c == chars[charIndex])
