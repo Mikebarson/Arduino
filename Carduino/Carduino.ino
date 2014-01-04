@@ -112,7 +112,13 @@ void readGPS()
   if (millis() - timer > 2000) {
     timer = millis(); // reset the timer
     
-    if (GPS.fix)
+    if (!GPS.fix)
+    {
+      SerialPrintf("\nTime: %02d:%02d:%02d\n", GPS.hour, GPS.minute, GPS.seconds);
+      SerialPrintf("Date: %02d/%02d/%04d\n", GPS.month, GPS.day, GPS.year);
+      SerialPrintf("Fix: %d quality: %d\n", (int)GPS.fix, GPS.fixquality);
+    }
+    else
     {
       year = 2000 + GPS.year;
       month = GPS.month;
@@ -127,12 +133,13 @@ void readGPS()
       speed = knotsToMPH(GPS.speed);
       angle = GPS.angle;
     
-      SerialPrintf("\nTime: %02d:%02d:%02d\n", hour, minute, second);
+      SerialPrintf("Time: %02d:%02d:%02d\n", hour, minute, second);
       SerialPrintf("Date: %02d/%02d/%04d\n", month, day, year);
       SerialPrintf("Fix: %d quality: %d\n", (int)GPS.fix, GPS.fixquality);
       SerialPrintf("Url: %s\n", mapUrl);
       SerialPrintf("Speed (mph): %d\n", (int)speed);
       SerialPrintf("Angle: %0d.%02d\n", (int)angle, (int)(frac(angle) * 100));
+    }
   }
 }
 

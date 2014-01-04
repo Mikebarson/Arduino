@@ -23,9 +23,9 @@ based on QuectelM10 chip.
 //#define _GSM_RXPIN_ 5
 
 //De-comment this two lines below if you have the
-//second version og GSM GPRS Shield
-#define _GSM_TXPIN_ 2
-#define _GSM_RXPIN_ 3	
+//second version of GSM GPRS Shield
+#define _GSM_TXPIN_ 7
+#define _GSM_RXPIN_ 8	
 
 
 #ifdef UNO
